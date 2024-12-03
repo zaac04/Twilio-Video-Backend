@@ -1,0 +1,42 @@
+package middlewares
+
+import "net/http"
+
+func CORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// List of allowed origins
+		allowedOrigins := []string{
+			"http://localhost:5173", // Origin 1
+			"https://tweb.kytt.site",
+		}
+
+		// Get the origin of the incoming request
+		origin := r.Header.Get("Origin")
+
+		// Check if the request's Origin header is in the list of allowed origins
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
+		}
+
+		// Ensure that credentials are allowed
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		// Allow specific headers
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+
+		// Allow specific methods
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+
+		// If it's an OPTIONS request, respond with no content (CORS preflight)
+		if r.Method == "OPTIONS" {
+			http.Error(w, "No Content", http.StatusNoContent)
+			return
+		}
+
+		// Continue processing the request
+		next.ServeHTTP(w, r)
+	})
+}

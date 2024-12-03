@@ -1,0 +1,5 @@
+secrets.yaml
+svc.yaml
+ingress.yaml
+*.pem
+*.env
