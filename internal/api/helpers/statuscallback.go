@@ -129,33 +129,31 @@ func TriggerMediaConvert(r *http.Request) error {
 	err = db.ExecuteTransaction(
 		func(tx *gorm.DB) error {
 			var interview models.Interview
+
 			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 				Where("room_name = ?", roomName).
 				First(&interview).Error; err != nil {
 				// Return early if the room doesn't exist
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					log.Printf("Room not found: %s", roomName)
-					return nil // Room not found, nothing to update
+					return nil
 				}
-				return err // Other errors
+				return err
 			}
 
 			// If the room's processing status is already set to MediaConvertStarted or is in progress, do not proceed
 			if interview.ProcessingStatus != "" && interview.ProcessingStatus != enums.MediaConvertNotStarted {
-				log.Printf("Room %s already processing or completed.", roomName)
-				return fmt.Errorf("Already processing") // Skip update if already processing or completed
+				return fmt.Errorf("room %s already processing or completed", roomName) // Skip update if already processing or completed
 			}
 
-			// Update the status only if not already started or completed
 			interview.ProcessingStatus = enums.MediaConvertStarted
 			if err := tx.Save(&interview).Error; err != nil {
-				log.Printf("Error updating room processing status: %v", err)
-				return err // If the update fails, return the error
+
+				return fmt.Errorf("error updating room processing status: %v", err)
 			}
 
 			log.Printf("Room %s status updated to %s", roomName, enums.MediaConvertStarted)
 			return nil
-
 		},
 	)
 

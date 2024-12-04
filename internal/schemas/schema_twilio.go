@@ -42,14 +42,12 @@ type Cloudfront_url struct {
 	Url string `json:"url"`
 }
 
-type MediaConvertEvent struct {
-	Status string `json:"status"`
+type MediaConvertMPDEvent struct {
 	Detail struct {
-		JobId              string `json:"jobId"`
+		JobID              string `json:"jobId"`  // Required
+		Status             string `json:"status"` // Required
 		OutputGroupDetails []struct {
-			OutputDetails []struct {
-				OutputFilePaths []string `json:"outputFilePaths"`
-			} `json:"outputDetails"`
-		} `json:"outputGroupDetails"`
+			PlaylistFilePaths []string `json:"playlistFilePaths"` // Optional
+		} `json:"outputGroupDetails,omitempty"` // Optional
 	} `json:"detail"`
 }
