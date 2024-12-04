@@ -15,7 +15,7 @@ import (
 var ListenPort = 4001
 
 func init() {
-	initializers.Initialize_backend("../../config.env")
+	initializers.Initialize_backend("../config.env")
 }
 
 func main() {
