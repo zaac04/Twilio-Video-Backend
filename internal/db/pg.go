@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
+	"stargazer/video-recording/config"
 	"stargazer/video-recording/internal/enums"
 	error_handler "stargazer/video-recording/internal/error"
 	"stargazer/video-recording/internal/models"
@@ -22,7 +22,7 @@ type Postgres struct {
 
 func (pg *Postgres) Connect() {
 	var err error
-	dsn := os.Getenv("PSQL_URL")
+	dsn := config.App.PSQL_URL
 	fmt.Println(dsn)
 	pg.client, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

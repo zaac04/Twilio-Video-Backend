@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 	"net/http"
-	"os"
+	"stargazer/video-recording/config"
 )
 
 func StringPtr(s string) *string                        { return &s }
@@ -12,11 +12,11 @@ func BoolPtr(b bool) *bool                              { return &b }
 func AddExtention(name string, extention string) string { return name + "." + extention }
 
 func GetS3Uri(roomName, object string) string {
-	return fmt.Sprintf("s3://%s/%s/%s/%s", os.Getenv("S3_BUCKET_NAME"), os.Getenv("S3_RECORDING_PREFIX"), roomName, object)
+	return fmt.Sprintf("s3://%s/%s/%s/%s", config.App.S3_BUCKET_NAME, config.App.S3_RECORDING_PREFIX, roomName, object)
 }
 
 func GetS3SaveUri(roomName string) string {
-	return fmt.Sprintf("s3://%s/%s/%s/%s", os.Getenv("S3_BUCKET_NAME"), os.Getenv("S3_MEDIA_CONVERT_PREFIX"), roomName, "final")
+	return fmt.Sprintf("s3://%s/%s/%s/%s", config.App.S3_BUCKET_NAME, config.App.S3_MEDIA_CONVERT_PREFIX, roomName, "final")
 }
 
 func GetClientIP(r *http.Request) string {

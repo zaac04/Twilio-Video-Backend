@@ -2,7 +2,7 @@ package twilio
 
 import (
 	"fmt"
-	"os"
+	"stargazer/video-recording/config"
 	"stargazer/video-recording/internal/utils"
 
 	"github.com/twilio/twilio-go"
@@ -15,9 +15,9 @@ type Twilio struct {
 }
 
 func CreateClient() *Twilio {
-	accountSid := os.Getenv("TW_ACC_SID")
-	apiKey := os.Getenv("TW_API_KEY")
-	apiSecretKey := os.Getenv("TW_API_SECRET_KEY")
+	accountSid := config.App.TWILIO_ACCOUNT_SID
+	apiKey := config.App.TWILIO_API_KEY
+	apiSecretKey := config.App.TWILIO_API_SECRET_KEY
 
 	return &Twilio{
 		client: twilio.NewRestClientWithParams(twilio.ClientParams{
@@ -29,9 +29,9 @@ func CreateClient() *Twilio {
 }
 
 func (tw *Twilio) GenerateAccessToken(room_name string, identity string) (token string, err error) {
-	accountSid := os.Getenv("TW_ACC_SID")
-	apiKey := os.Getenv("TW_API_KEY")
-	apiSecretKey := os.Getenv("TW_API_SECRET_KEY")
+	accountSid := config.App.TWILIO_ACCOUNT_SID
+	apiKey := config.App.TWILIO_API_KEY
+	apiSecretKey := config.App.TWILIO_API_SECRET_KEY
 
 	params := jwt.AccessTokenParams{
 		AccountSid:    accountSid,
@@ -49,7 +49,7 @@ func (tw *Twilio) GenerateAccessToken(room_name string, identity string) (token 
 	return jwtToken.ToJwt()
 }
 
-func (tw *Twilio) FetchRoomStatus(roomSid string) (string, error) {
+func (tw *Twilio) FetchRoomStatus(roomSid string) (status string, err error) {
 	twRoom, err := tw.client.VideoV1.FetchRoom(roomSid)
 
 	if err != nil || twRoom.Status == nil {
@@ -66,7 +66,7 @@ func (tw *Twilio) CreateRoom(roomName string, Expiry int32) (string, error) {
 		UnusedRoomTimeout:           utils.IntPtr(60),
 		MaxParticipants:             utils.IntPtr(1),
 		MaxParticipantDuration:      utils.IntPtr(60),
-		StatusCallback:              utils.StringPtr(os.Getenv("TW_CALLBACK_URL")),
+		StatusCallback:              utils.StringPtr(config.App.TWILIO_CALLBACK_URL),
 		StatusCallbackMethod:        utils.StringPtr("POST"),
 	})
 

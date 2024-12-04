@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"os"
 	"path"
+	AppConfig "stargazer/video-recording/config"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -23,7 +23,7 @@ type CopyObject struct {
 }
 
 func CopyFiles(CopyObject CopyObject) error {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(os.Getenv("S3_BUCKET_REGION")))
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(AppConfig.App.S3_BUCKET_REGION))
 
 	if err != nil {
 		return err

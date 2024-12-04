@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
+	AppConfig "stargazer/video-recording/config"
 	"stargazer/video-recording/internal/utils"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/mediaconvert"
 	"github.com/aws/aws-sdk-go-v2/service/mediaconvert/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 type MediaConvert struct {
@@ -25,15 +24,11 @@ type MediaConvert struct {
 }
 
 func GetMediaConvertEndpoint() string {
-	return fmt.Sprintf("mediaconvert.%s.amazonaws.com", os.Getenv("AWS_REGION"))
+	return fmt.Sprintf("mediaconvert.%s.amazonaws.com", AppConfig.App.AWS_REGION)
 }
 
 func CreateClient() *MediaConvert {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
-	st := sts.NewFromConfig(cfg)
-
-	out, _ := st.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
-	fmt.Println(*out.Account, *out.Arn, *out.UserId)
 
 	if err != nil {
 		log.Fatalf("failed to load configuration, %v", err)
@@ -51,7 +46,7 @@ func (mc *MediaConvert) CreateJob(File []File, def []Definition, output_location
 	mc.addOutputs(def)
 
 	createJob := mediaconvert.CreateJobInput{
-		Role:     utils.StringPtr(os.Getenv("MEDIA_CONVERT_ROLE")),
+		Role:     utils.StringPtr(AppConfig.App.MEDIA_CONVERT_ROLE),
 		Settings: &mc.JobSettings,
 	}
 
