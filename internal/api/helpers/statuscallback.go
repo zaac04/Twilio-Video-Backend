@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,9 +9,11 @@ import (
 	"stargazer/video-recording/internal/enums"
 	"stargazer/video-recording/internal/models"
 	"stargazer/video-recording/internal/utils"
+	"stargazer/video-recording/pkg/aws/mediaconvert"
 	"stargazer/video-recording/pkg/twilio"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func OnRecordingCompleted(r *http.Request) error {
@@ -83,6 +86,7 @@ func TriggerMediaConvert(r *http.Request) error {
 	roomName := r.FormValue("RoomName")
 	roomStatus := r.FormValue("RoomStatus")
 	roomSid := r.FormValue("RoomSid")
+	Event := r.FormValue("StatusCallbackEvent")
 
 	tx, err := db.Pg.GetTxClient()
 	if err != nil {
@@ -122,6 +126,43 @@ func TriggerMediaConvert(r *http.Request) error {
 		return fmt.Errorf("triggering failed due to ongoing recording session")
 	}
 
+	err = db.ExecuteTransaction(
+		func(tx *gorm.DB) error {
+			var interview models.Interview
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+				Where("room_name = ?", roomName).
+				First(&interview).Error; err != nil {
+				// Return early if the room doesn't exist
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					log.Printf("Room not found: %s", roomName)
+					return nil // Room not found, nothing to update
+				}
+				return err // Other errors
+			}
+
+			// If the room's processing status is already set to MediaConvertStarted or is in progress, do not proceed
+			if interview.ProcessingStatus != "" && interview.ProcessingStatus != enums.MediaConvertNotStarted {
+				log.Printf("Room %s already processing or completed.", roomName)
+				return fmt.Errorf("Already processing") // Skip update if already processing or completed
+			}
+
+			// Update the status only if not already started or completed
+			interview.ProcessingStatus = enums.MediaConvertStarted
+			if err := tx.Save(&interview).Error; err != nil {
+				log.Printf("Error updating room processing status: %v", err)
+				return err // If the update fails, return the error
+			}
+
+			log.Printf("Room %s status updated to %s", roomName, enums.MediaConvertStarted)
+			return nil
+
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
 	// Trigger media conversion and update the interview status
 	if err := triggerMediaConversion(tx, roomName); err != nil {
 		tx.Rollback()
@@ -132,7 +173,7 @@ func TriggerMediaConvert(r *http.Request) error {
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	log.Printf("Successfully triggered media conversion for room: %s", roomName)
+	log.Printf("Successfully triggered media conversion for room: %s during event: %s", roomName, Event)
 	return nil
 }
 
@@ -163,11 +204,34 @@ func checkIncompleteStatus(tx *gorm.DB, roomName string) (int64, error) {
 
 func triggerMediaConversion(tx *gorm.DB, roomName string) error {
 	// Start media conversion in the background
-	//	go mediaconvert.StartConvertions(roomName)
+	mc := mediaconvert.CreateClient()
 
-	// Update the interview's processing status
+	var participants []models.ParticipantStatus
+	var videos []mediaconvert.File
+
+	err := tx.Where("interview_room_name = ?", roomName).
+		Order("created_at ASC").
+		Find(&participants).Error
+
+	if err != nil {
+		return err
+	}
+
+	for _, participant := range participants {
+		video := mediaconvert.File{
+			AudioUrl: utils.GetS3Uri(roomName, participant.Audio),
+			VideoUrl: utils.GetS3Uri(roomName, participant.Video),
+		}
+		videos = append(videos, video)
+	}
+
+	jobId, err := mc.CreateJob(videos, []mediaconvert.Definition{mediaconvert.SD480p, mediaconvert.SD360p}, utils.GetS3SaveUri(roomName))
+	if err != nil {
+		return fmt.Errorf("error creating mediaconvert Job")
+	}
 	return tx.Where("room_name = ?", roomName).
 		Updates(models.Interview{
-			ProcessingStatus: enums.MediaConvertOnGoing,
+			MediaConvertJobId: jobId,
+			ProcessingStatus:  enums.MediaConvertOnGoing,
 		}).Error
 }

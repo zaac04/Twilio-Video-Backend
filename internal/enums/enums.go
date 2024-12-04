@@ -78,6 +78,7 @@ const (
 	PgFetchFailed              = "Failed to Get Entry"
 	TwilioCookieKey            = "twilio-room"
 	MediaConvertNotStarted     = "Not-Started"
+	MediaConvertStarted        = "Started"
 	MediaConvertOnGoing        = "OnGoing"
 	MediaConvertFinished       = "Finished"
 	MediaConvertFailed         = "Failed"
