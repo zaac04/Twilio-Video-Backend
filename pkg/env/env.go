@@ -52,7 +52,11 @@ func verify_env(s interface{}) error {
 			return fmt.Errorf("validation failed for field:%v, check env value provided", field.Value)
 		}
 
-		converted_val := convertToDataType(field.Value, curr_field.Type())
+		converted_val, err := convertToDataType(field.Value, curr_field.Type())
+
+		if err != nil {
+			return fmt.Errorf("cannot typecase field %s with value of type %s", field.Value, curr_field.Type())
+		}
 		val := reflect.ValueOf(converted_val)
 
 		if val.Type().ConvertibleTo(curr_field.Type()) {
@@ -95,16 +99,16 @@ func getFieldMeta(valType reflect.Type, field *Field, i int) error {
 	return nil
 }
 
-func convertToDataType(value any, TargetType reflect.Type) interface{} {
+func convertToDataType(value any, TargetType reflect.Type) (interface{}, error) {
 	if TargetType.Kind() == reflect.Int {
-		uintValue, _ := strconv.ParseInt(value.(string), 10, 32)
-		return int(uintValue)
+		uintValue, err := strconv.ParseInt(value.(string), 10, 32)
+		return int(uintValue), err
 	}
 
 	if TargetType.Kind() == reflect.String {
-		return value.(string)
+		return value.(string), nil
 	}
-	return value
+	return value, nil
 }
 
 func splitTags(s string) (data map[string]string) {
@@ -124,10 +128,10 @@ func validate(field *Field) error {
 	case "url":
 		parsedURL, err := url.Parse(field.Value)
 		if err != nil {
-			return fmt.Errorf("Invalid URL: %q, Error: %v\n", field.Value, err)
+			return fmt.Errorf("invalid URL: %q, Error: %v", field.Value, err)
 		}
 		if parsedURL.Scheme == "" || parsedURL.Host == "" {
-			return fmt.Errorf("Invalid URL: %q, Missing scheme or host\n", field.Value)
+			return fmt.Errorf("invalid URL: %q, Missing scheme or host", field.Value)
 		}
 		return nil
 	default:

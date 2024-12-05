@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"stargazer/video-recording/config"
 	middlewares "stargazer/video-recording/internal/api/MiddleWares"
 	"stargazer/video-recording/internal/api/handlers"
 	"stargazer/video-recording/internal/enums"
@@ -12,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-var ListenPort = 4001
+var ListenPort int
 
 func init() {
 	initializers.Initialize_backend("../config.env")
@@ -58,6 +59,7 @@ func main() {
 		w.Write([]byte("method is not valid"))
 	})
 
+	ListenPort = config.App.APP_PORT
 	fmt.Println(enums.Terminalbold + enums.TerminalcCyan + "Stargazer Video Service Listening on port: " + enums.Terminalitalic + strconv.Itoa(ListenPort) + enums.Terminalreset)
 	fmt.Println(enums.Terminalbold + enums.TerminalcRed + "Check Directory:" + enums.TerminalcWhite + enums.Terminalitalic + " logs/" + enums.Terminalreset + " for detailed logging and Error reports" + enums.Terminalreset)
 

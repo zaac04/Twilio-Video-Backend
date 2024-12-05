@@ -22,7 +22,7 @@ type Postgres struct {
 
 func (pg *Postgres) Connect() {
 	var err error
-	dsn := config.App.PSQL_URL
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", config.App.DB_HOST, config.App.DB_USER, config.App.DB_PASS, config.App.DB_NAME, config.App.DB_PORT)
 	fmt.Println(dsn)
 	pg.client, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

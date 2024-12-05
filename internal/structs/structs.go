@@ -24,8 +24,7 @@ type AppConfig struct {
 	TWILIO_API_KEY                string `env:"name:TWILIO_API_KEY"`
 	TWILIO_API_SECRET_KEY         string `env:"name:TWILIO_API_SECRET_KEY" `
 	TWILIO_CALLBACK_URL           string `env:"type:url,name:TWILIO_CALLBACK_URL"`
-	TWILIO_API_AUTH_TOKEN         string `env:"TWILIO_API_AUTH_TOKEN"`
-	PSQL_URL                      string `env:"type:db_dsn,name:PSQL_URL"`
+	TWILIO_API_AUTH_TOKEN         string `env:"name:TWILIO_API_AUTH_TOKEN"`
 	S3_BUCKET_NAME                string `env:"name:S3_BUCKET_NAME"`
 	S3_BUCKET_REGION              string `env:"name:S3_BUCKET_REGION"`
 	S3_RECORDING_PREFIX           string `env:"name:S3_RECORDING_PREFIX"`
@@ -34,4 +33,11 @@ type AppConfig struct {
 	AWS_REGION                    string `env:"name:AWS_REGION"`
 	MEDIA_CONVERT_BASIC_AUTH_USER string `env:"name:MEDIA_CONVERT_BASIC_AUTH_USER"`
 	MEDIA_CONVERT_BASIC_AUTH_PASS string `env:"name:MEDIA_CONVERT_BASIC_AUTH_PASS"`
+
+	APP_PORT int    `env:"name:APP_PORT"`
+	DB_HOST  string `env:"name:DB_HOST"`
+	DB_PORT  string `env:"name:DB_PORT"`
+	DB_NAME  string `env:"name:DB_NAME"`
+	DB_USER  string `env:"name:DB_USER"`
+	DB_PASS  string `env:"name:DB_PASS"`
 }
