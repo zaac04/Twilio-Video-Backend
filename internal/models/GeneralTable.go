@@ -8,7 +8,7 @@ type Interview struct {
 	RoomSid           string
 	Status            string
 	Token             string
-	MediaConvertJobId string
+	MediaConvertJobId string `gorm:"index"`
 	VideoUrl          string
 	ProcessingStatus  string
 	ParticipantStatus []ParticipantStatus `gorm:"foreignKey:InterviewRoomName;references:RoomName"`
@@ -18,12 +18,12 @@ type Interview struct {
 
 type ParticipantStatus struct {
 	Id                uint   `gorm:"primaryKey;autoIncrement"`
-	InterviewRoomName string `gorm:"index"`
-	ParticipantId     string
-	Audio             string
-	Video             string
-	AudioStatus       bool `gorm:"default:false"`
-	VideoStatus       bool `gorm:"default:false"`
+	InterviewRoomName string `gorm:"index:idx_participant_statuses_room_audio_video"`
+	ParticipantId     string `gorm:"index"`
+	Audio             string `gorm:"index:idx_participant_statuses_room_audio_video"`
+	Video             string `gorm:"index:idx_participant_statuses_room_audio_video"`
+	AudioStatus       bool   `gorm:"default:false"`
+	VideoStatus       bool   `gorm:"default:false"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

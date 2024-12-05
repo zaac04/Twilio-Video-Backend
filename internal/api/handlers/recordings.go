@@ -24,7 +24,7 @@ func RecordingStatusCallback(w http.ResponseWriter, r *http.Request) {
 		utils.LogError(fmt.Errorf("failed to parse form: %v", err), ErrMeta.ReqId, error_handler.FormParseFailed, error_handler.InternalError)
 		return
 	}
-
+	//TODO:verify twilio url (checksum)
 	switch r.FormValue("StatusCallbackEvent") {
 	case "participant-connected":
 		err = helpers.OnParticipantConneted(r)

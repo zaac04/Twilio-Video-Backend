@@ -19,7 +19,6 @@ import (
 func OnRecordingCompleted(r *http.Request) error {
 	participantId := r.FormValue("ParticipantSid")
 	recordingType := r.FormValue("Type")
-	// roomName := r.FormValue("RoomName")
 
 	model := models.ParticipantStatus{}
 
@@ -29,6 +28,7 @@ func OnRecordingCompleted(r *http.Request) error {
 		model.AudioStatus = true
 	}
 
+	//NOTE:Bitmap heap followed by bitmap index scan
 	db.ExecuteTransaction(func(tx *gorm.DB) error {
 		err := tx.Where("participant_id = ?", participantId).Updates(&model).Error
 		return err
@@ -38,6 +38,7 @@ func OnRecordingCompleted(r *http.Request) error {
 }
 
 func OnRecordingStarted(r *http.Request) error {
+
 	participantId := r.FormValue("ParticipantSid")
 	recordingType := r.FormValue("Type")
 	recordingSid := r.FormValue("RecordingSid")
@@ -51,12 +52,14 @@ func OnRecordingStarted(r *http.Request) error {
 		model.Audio = utils.AddExtention(recordingSid, container)
 	}
 
+	//NOTE: query bitmap index scan
 	err := db.ExecuteTransaction(func(tx *gorm.DB) error {
 		err := tx.Where("participant_id = ?", participantId).Updates(&model).Error
 		if err != nil {
 			return err
 		}
 
+		//NOTE: query  index scan
 		err = tx.Where("room_name = ?", roomName).Updates(models.Interview{
 			ProcessingStatus: enums.MediaConvertNotStarted,
 		}).Error
@@ -82,22 +85,11 @@ func OnParticipantConneted(r *http.Request) error {
 	return err
 }
 
-func TriggerMediaConvert(r *http.Request) error {
+func TriggerMediaConvert(r *http.Request) (err error) {
 	roomName := r.FormValue("RoomName")
 	roomStatus := r.FormValue("RoomStatus")
 	roomSid := r.FormValue("RoomSid")
 	Event := r.FormValue("StatusCallbackEvent")
-
-	tx, err := db.Pg.GetTxClient()
-	if err != nil {
-		return fmt.Errorf("failed to get transaction client: %v", err)
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			log.Printf("panic recovered: %v", r)
-		}
-	}()
 
 	if len(roomStatus) == 0 {
 		roomStatus, err = fetchRoomStatusFromTwilio(roomSid)
@@ -105,7 +97,6 @@ func TriggerMediaConvert(r *http.Request) error {
 			return fmt.Errorf("failed to fetch room status from Twilio: %v", err)
 		}
 	}
-
 	if roomStatus != "completed" {
 		log.Printf("Room %s is not completed yet, skipping trigger.", roomName)
 		return nil
@@ -114,23 +105,28 @@ func TriggerMediaConvert(r *http.Request) error {
 	log.Println("======================")
 	log.Println("Processing room_closed for room:", roomName)
 
-	incompleteCount, err := checkIncompleteStatus(tx, roomName)
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to check incomplete participant status: %v", err)
-	}
+	err = db.ExecuteTransaction(func(d *gorm.DB) error {
+		incompleteCount, err := checkIncompleteStatus(d, roomName)
+		if err != nil {
+			return fmt.Errorf("failed to check incomplete participant status: %v", err)
+		}
 
-	if incompleteCount > 0 {
-		log.Printf("Room %s has %d incomplete participants, skipping trigger.", roomName, incompleteCount)
-		tx.Rollback()
-		return fmt.Errorf("triggering failed due to ongoing recording session")
+		if incompleteCount > 0 {
+			log.Printf("Room %s has %d incomplete participants, skipping trigger.", roomName, incompleteCount)
+			return fmt.Errorf("triggering failed due to ongoing recording session")
+		}
+		return nil
+	})
+
+	if err != nil {
+		return
 	}
 
 	err = db.ExecuteTransaction(
-		func(tx *gorm.DB) error {
+		func(d *gorm.DB) error {
 			var interview models.Interview
 
-			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			if err := d.Clauses(clause.Locking{Strength: "UPDATE"}).
 				Where("room_name = ?", roomName).
 				First(&interview).Error; err != nil {
 				// Return early if the room doesn't exist
@@ -147,8 +143,8 @@ func TriggerMediaConvert(r *http.Request) error {
 			}
 
 			interview.ProcessingStatus = enums.MediaConvertStarted
-			if err := tx.Save(&interview).Error; err != nil {
 
+			if err := d.Save(&interview).Error; err != nil {
 				return fmt.Errorf("error updating room processing status: %v", err)
 			}
 
@@ -162,13 +158,8 @@ func TriggerMediaConvert(r *http.Request) error {
 	}
 
 	// Trigger media conversion and update the interview status
-	if err := triggerMediaConversion(tx, roomName); err != nil {
-		tx.Rollback()
+	if err := triggerMediaConversion(roomName); err != nil {
 		return fmt.Errorf("failed to trigger media conversion: %v", err)
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
 	log.Printf("Successfully triggered media conversion for room: %s during event: %s", roomName, Event)
@@ -185,32 +176,39 @@ func fetchRoomStatusFromTwilio(roomSid string) (string, error) {
 	return status, nil
 }
 
+// TODO:Do Explain Analyze
 func checkIncompleteStatus(tx *gorm.DB, roomName string) (int64, error) {
 	var incompleteCount int64
-	err := tx.Model(&models.ParticipantStatus{}).
-		Joins("JOIN interviews ON interviews.room_name = participant_statuses.interview_room_name").
-		Where("(participant_statuses.interview_room_name = ? AND (participant_statuses.audio_status = ? OR participant_statuses.video_status = ?)) OR (interviews.room_name = ? AND interviews.processing_status != ?)",
-			roomName,
-			false, // Audio incomplete
-			false, // Video incomplete
-			roomName,
-			enums.MediaConvertNotStarted). // Processing not started
-		Count(&incompleteCount).Error
+	query := `
+		SELECT count(*) AS total
+		FROM (
+			SELECT 1
+			FROM participant_statuses
+			WHERE interview_room_name = ? AND (audio_status = ? OR video_status = ?)
+			UNION ALL
+			SELECT 1
+			FROM interviews
+			WHERE room_name = ? AND processing_status != ?
+		) AS combined;
+	`
+
+	err := tx.Raw(query, roomName, false, false, roomName, enums.MediaConvertNotStarted).Scan(&incompleteCount).Error
 
 	return incompleteCount, err
 }
 
-func triggerMediaConversion(tx *gorm.DB, roomName string) error {
-	// Start media conversion in the background
+func triggerMediaConversion(roomName string) error {
+
 	mc := mediaconvert.CreateClient()
 
 	var participants []models.ParticipantStatus
 	var videos []mediaconvert.File
+	err := db.ExecuteTransaction(func(tx *gorm.DB) error {
+		return tx.Where("interview_room_name = ?", roomName).
+			Order("created_at ASC").
+			Find(&participants).Error
 
-	err := tx.Where("interview_room_name = ?", roomName).
-		Order("created_at ASC").
-		Find(&participants).Error
-
+	})
 	if err != nil {
 		return err
 	}
@@ -222,14 +220,20 @@ func triggerMediaConversion(tx *gorm.DB, roomName string) error {
 		}
 		videos = append(videos, video)
 	}
+	//NOTE:query ok
+
+	fmt.Println(videos)
 
 	jobId, err := mc.CreateJob(videos, []mediaconvert.Definition{mediaconvert.SD480p, mediaconvert.SD360p}, utils.GetS3SaveUri(roomName))
 	if err != nil {
 		return fmt.Errorf("error creating mediaconvert Job")
 	}
-	return tx.Where("room_name = ?", roomName).
-		Updates(models.Interview{
-			MediaConvertJobId: jobId,
-			ProcessingStatus:  enums.MediaConvertOnGoing,
-		}).Error
+
+	return db.ExecuteTransaction(func(tx *gorm.DB) error {
+		return tx.Where("room_name = ?", roomName).
+			Updates(models.Interview{
+				MediaConvertJobId: jobId,
+				ProcessingStatus:  enums.MediaConvertOnGoing,
+			}).Error
+	})
 }

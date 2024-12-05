@@ -24,8 +24,8 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 		utils.LogError(err, ErrMeta.ReqId, error_handler.ErrorDecodingJson, error_handler.ErrorDecodingJson)
 		return
 	}
-
-	res := db.Where("room_name = ?", createRoomInput.RoomName).Find(&RoomDetails)
+	//TODO:Test Functionality
+	res := db.Select("status").Where("room_name = ?", createRoomInput.RoomName).Find(&RoomDetails)
 
 	if res.Error != nil {
 		helpers.RespondDbFailed(err, &ErrMeta)
