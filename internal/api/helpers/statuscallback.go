@@ -176,7 +176,6 @@ func fetchRoomStatusFromTwilio(roomSid string) (string, error) {
 	return status, nil
 }
 
-// TODO:Do Explain Analyze
 func checkIncompleteStatus(tx *gorm.DB, roomName string) (int64, error) {
 	var incompleteCount int64
 	query := `
