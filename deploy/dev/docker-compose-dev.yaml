@@ -1,0 +1,26 @@
+services:
+  video-service:
+    image: 851874770356.dkr.ecr.us-east-1.amazonaws.com/stargazer-video-service:latest
+    env_file: .env
+    ports:
+      - 4001:4000
+
+  pg:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=8242
+      - POSTGRES_DB=whitelake
+    volumes:
+      - postgres-db:/var/lib/postgresql/
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres-db:
+
+networks:
+  default:
+      name: stargazer_network
+      external: true
