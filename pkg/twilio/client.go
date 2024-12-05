@@ -6,6 +6,7 @@ import (
 	"stargazer/video-recording/internal/utils"
 
 	"github.com/twilio/twilio-go"
+	"github.com/twilio/twilio-go/client"
 	"github.com/twilio/twilio-go/client/jwt"
 	openapi "github.com/twilio/twilio-go/rest/video/v1"
 )
@@ -106,4 +107,9 @@ func (tw *Twilio) DeleteAllRoom() (roomNames []string, err error) {
 		}
 	}
 	return roomNames, nil
+}
+
+func ValidateRequest(signature string, params map[string]string) (ok bool) {
+	validator := client.NewRequestValidator(config.App.TWILIO_API_AUTH_TOKEN)
+	return validator.Validate(config.App.TWILIO_CALLBACK_URL, params, signature)
 }

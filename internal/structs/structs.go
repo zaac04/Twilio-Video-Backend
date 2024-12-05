@@ -24,6 +24,7 @@ type AppConfig struct {
 	TWILIO_API_KEY                string `env:"name:TWILIO_API_KEY"`
 	TWILIO_API_SECRET_KEY         string `env:"name:TWILIO_API_SECRET_KEY" `
 	TWILIO_CALLBACK_URL           string `env:"type:url,name:TWILIO_CALLBACK_URL"`
+	TWILIO_API_AUTH_TOKEN         string `env:"TWILIO_API_AUTH_TOKEN"`
 	PSQL_URL                      string `env:"type:db_dsn,name:PSQL_URL"`
 	S3_BUCKET_NAME                string `env:"name:S3_BUCKET_NAME"`
 	S3_BUCKET_REGION              string `env:"name:S3_BUCKET_REGION"`
