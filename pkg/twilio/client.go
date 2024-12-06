@@ -59,14 +59,14 @@ func (tw *Twilio) FetchRoomStatus(roomSid string) (status string, err error) {
 	return *twRoom.Status, nil
 }
 
-func (tw *Twilio) CreateRoom(roomName string, Expiry int32) (string, error) {
+func (tw *Twilio) CreateRoom(roomName string, Expiry int32, timeout int32) (string, error) {
 	Room, err := tw.client.VideoV1.CreateRoom(&openapi.CreateRoomParams{
 		UniqueName:                  utils.StringPtr(roomName),
 		RecordParticipantsOnConnect: utils.BoolPtr(true),
-		EmptyRoomTimeout:            utils.IntPtr(60),
-		UnusedRoomTimeout:           utils.IntPtr(60),
+		EmptyRoomTimeout:            utils.IntPtr(int(timeout)),
+		UnusedRoomTimeout:           utils.IntPtr(int(timeout)),
 		MaxParticipants:             utils.IntPtr(1),
-		MaxParticipantDuration:      utils.IntPtr(60),
+		MaxParticipantDuration:      utils.IntPtr(int(Expiry)),
 		StatusCallback:              utils.StringPtr(config.App.TWILIO_CALLBACK_URL),
 		StatusCallbackMethod:        utils.StringPtr("POST"),
 	})

@@ -30,7 +30,21 @@ func RespondIoErr(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 
 func RespondTwilioRoomAlreadyExists(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
-	ErrMeta.SetLogs(err, error_handler.TwilioRoomAlreadyExist, enums.InternalError, http.StatusBadRequest, true)
+	ErrMeta.SetLogs(err, error_handler.TwilioRoomAlreadyExist, error_handler.TwilioRoomAlreadyExist, http.StatusBadRequest, true)
+	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
+	ErrMeta.Writer.Write(ErrResponse)
+}
+
+func RespondTwilioRoomAlreadyClosed(err error, ErrMeta *error_handler.ErrorResponseMeta) {
+	var ErrResponse []byte
+	ErrMeta.SetLogs(err, error_handler.TwilioRoomAlreadyClosed, error_handler.TwilioRoomAlreadyClosed, http.StatusBadRequest, true)
+	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
+	ErrMeta.Writer.Write(ErrResponse)
+}
+
+func RespondTwilioRoomRoomNotFound(err error, ErrMeta *error_handler.ErrorResponseMeta) {
+	var ErrResponse []byte
+	ErrMeta.SetLogs(err, error_handler.TwilioRoomNotFound, error_handler.TwilioRoomNotFound, http.StatusNotFound, true)
 	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
 	ErrMeta.Writer.Write(ErrResponse)
 }
@@ -44,7 +58,7 @@ func RespondTwilioRoomCreationError(err error, ErrMeta *error_handler.ErrorRespo
 
 func RespondTwilioRoomCloseError(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
-	ErrMeta.SetLogs(err, error_handler.TwilioRoomAlreadyExist, enums.InternalError, http.StatusBadRequest, true)
+	ErrMeta.SetLogs(err, error_handler.TwilioRoomAlreadyExist, err.Error(), http.StatusBadRequest, true)
 	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
 	ErrMeta.Writer.Write(ErrResponse)
 }
@@ -52,6 +66,20 @@ func RespondTwilioRoomCloseError(err error, ErrMeta *error_handler.ErrorResponse
 func RespondDbFailed(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
 	ErrMeta.SetLogs(err, err.Error(), err.Error(), http.StatusInternalServerError, false)
+	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
+	ErrMeta.Writer.Write(ErrResponse)
+}
+
+func RespondValidationFailed(err error, ErrMeta *error_handler.ErrorResponseMeta) {
+	var ErrResponse []byte
+	ErrMeta.SetLogs(err, err.Error(), err.Error(), http.StatusBadRequest, false)
+	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
+	ErrMeta.Writer.Write(ErrResponse)
+}
+
+func RespondInterServiceCallFailed(err error, ErrMeta *error_handler.ErrorResponseMeta) {
+	var ErrResponse []byte
+	ErrMeta.SetLogs(err, err.Error(), err.Error(), http.StatusUnauthorized, false)
 	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
 	ErrMeta.Writer.Write(ErrResponse)
 }

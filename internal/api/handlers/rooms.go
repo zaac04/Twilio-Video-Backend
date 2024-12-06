@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"stargazer/video-recording/internal/api/helpers"
 	"stargazer/video-recording/internal/db"
@@ -16,54 +17,48 @@ import (
 func CreateRoom(w http.ResponseWriter, r *http.Request) {
 	ErrMeta := helpers.GenerateErrMeta(r, w)
 	var RoomDetails models.Interview
-	var createRoomInput schemas.CreateRoom
+	var reqBody schemas.CreateRoom
 	db := db.Pg.GetClient()
 
-	err := utils.UnmarshalReqBody(r.Body, &createRoomInput)
+	err := utils.UnmarshalReqBody(r.Body, &reqBody)
 	if err != nil {
-		utils.LogError(err, ErrMeta.ReqId, error_handler.ErrorDecodingJson, error_handler.ErrorDecodingJson)
+		helpers.RespondJsonDecodeErr(err, &ErrMeta)
 		return
 	}
-	//TODO:Test Functionality
-	res := db.Select("status").Where("room_name = ?", createRoomInput.RoomName).Find(&RoomDetails)
 
+	res := db.Where("room_name = ?", reqBody.RoomName).Find(&RoomDetails)
 	if res.Error != nil {
 		helpers.RespondDbFailed(err, &ErrMeta)
 		utils.LogError(err, ErrMeta.ReqId, error_handler.DBRetrieveFailed, enums.InternalError)
 		return
 	}
 
-	if res.RowsAffected != 0 && RoomDetails.Status == "" {
-		helpers.RespondTwilioRoomAlreadyExists(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.TwilioRoomAlreadyExist, enums.InternalError)
+	if len(reqBody.RoomName) == 0 {
+		helpers.RespondValidationFailed(fmt.Errorf("room name must not be empty"), &ErrMeta)
+		return
+	}
+
+	if res.RowsAffected != 0 && RoomDetails.Status != "" {
+		helpers.RespondTwilioRoomAlreadyExists(fmt.Errorf("%s", error_handler.TwilioRoomAlreadyExist), &ErrMeta)
+		utils.LogError(fmt.Errorf("%s", error_handler.TwilioRoomAlreadyExist), ErrMeta.ReqId, error_handler.TwilioRoomAlreadyExist, enums.InternalError)
 		return
 	}
 
 	//creates a twilio room and respons error if occurs
-	token, roomId, err := helpers.CreateRoomHelper(&ErrMeta, &createRoomInput)
+	token, roomId, err := helpers.CreateRoomHelper(&ErrMeta, &reqBody)
 	if err != nil {
 		helpers.RespondTwilioRoomCreationError(err, &ErrMeta)
 		utils.LogError(err, ErrMeta.ReqId, error_handler.TwilioRoomCreationError, enums.InternalError)
 		return
 	}
 
-	err = db.Create(&models.Interview{
-		RoomName: createRoomInput.RoomName,
-		RoomSid:  roomId,
-		Token:    token,
-		Status:   enums.RoomStatusOnGoing,
-	}).Error
-
-	if err != nil {
+	if db.Create(&models.Interview{RoomName: reqBody.RoomName, RoomSid: roomId, Token: token, Status: enums.RoomStatusOnGoing}).Error != nil {
 		helpers.RespondDbFailed(err, &ErrMeta)
 		utils.LogError(err, ErrMeta.ReqId, error_handler.DBEntryFailed, enums.InternalError)
+		return
 	}
 
-	data, err := json.Marshal(schemas.CreateRoomResp{
-		Token:    token,
-		RoomName: createRoomInput.RoomName,
-	})
-
+	data, err := json.MarshalIndent(schemas.CreateRoomResp{Token: token, RoomName: reqBody.RoomName}, " ", " ")
 	if err != nil {
 		helpers.RespondJsonEncodeErr(err, &ErrMeta)
 		utils.LogError(err, ErrMeta.ReqId, error_handler.ErrorEncodingJson, error_handler.InternalError)
@@ -84,7 +79,26 @@ func CloseRoom(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.UnmarshalReqBody(r.Body, &reqBody)
 	if err != nil {
-		utils.LogError(err, ErrMeta.ReqId, error_handler.ErrorDecodingJson, error_handler.ErrorDecodingJson)
+		helpers.RespondJsonDecodeErr(err, &ErrMeta)
+		return
+	}
+
+	if len(reqBody.RoomName) == 0 {
+		helpers.RespondValidationFailed(fmt.Errorf("room name must not be empty"), &ErrMeta)
+		return
+	}
+
+	res := db.Where("room_name = ?", reqBody.RoomName).Find(&RoomDetails)
+	if res.Error != nil {
+		helpers.RespondDbFailed(err, &ErrMeta)
+		return
+	}
+
+	if res.RowsAffected != 0 && RoomDetails.Status == enums.RoomStatusClosed {
+		helpers.RespondTwilioRoomAlreadyClosed(fmt.Errorf("%s", error_handler.TwilioRoomNotFound), &ErrMeta)
+		return
+	} else if res.RowsAffected == 0 && RoomDetails.Status == "" {
+		helpers.RespondTwilioRoomRoomNotFound(fmt.Errorf("%s", error_handler.TwilioRoomNotFound), &ErrMeta)
 		return
 	}
 
@@ -92,12 +106,11 @@ func CloseRoom(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		helpers.RespondTwilioRoomCloseError(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.TwilioFail, error_handler.InternalError)
 		return
 	}
 
 	result := db.Where("room_name = ?", RoomDetails.RoomName).Updates(&models.Interview{
-		Status: "closed",
+		Status: enums.RoomStatusClosed,
 	})
 
 	if result.Error != nil {

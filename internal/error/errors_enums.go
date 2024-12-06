@@ -51,4 +51,6 @@ const (
 	TwilioRoomAlreadyExist     = "Twilio Room Already exists/closed"
 	TwilioRoomCreationError    = "Twilio Room Creation Failed"
 	TwilioRoomCloseError       = "Failed to close Twilio Room"
+	TwilioRoomAlreadyClosed    = "Twilio Room Already closed"
+	TwilioRoomNotFound         = "Twilio Room Not Found"
 )

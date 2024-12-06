@@ -5,12 +5,12 @@ type Room struct {
 }
 
 type CloseRoom struct {
-	Room
+	RoomName string `json:"room_name"`
 }
 
 type CreateRoom struct {
-	Room
-	Expiry int32
+	RoomName string `json:"room_name"`
+	Expiry   int32  `json:"duration,omitempty"`
 }
 
 type GetAllRecordings struct {
