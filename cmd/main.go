@@ -38,9 +38,9 @@ func main() {
 		r.Post("/delete_all_rooms", handlers.DeleteAllRoom)
 		r.Get("/get_all_rooms", handlers.GetAllRooms)
 		r.Post("/get_all_recordings", handlers.GetAllRecordings)
-
-		//TODO:Add GetRoomDetails
+		r.Get("/get_room_details", handlers.GetRoomDetails)
 		//TODO:Add GetVideoUrl
+		r.Get("/get_video_url", handlers.GetVideoUrl)
 	})
 
 	router.Group(func(r chi.Router) {

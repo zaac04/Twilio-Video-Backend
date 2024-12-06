@@ -178,3 +178,44 @@ func DeleteAllRoom(w http.ResponseWriter, r *http.Request) {
 	}
 	helpers.SendResponse(w, data)
 }
+
+func GetRoomDetails(w http.ResponseWriter, r *http.Request) {
+	Errmeta := helpers.GenerateErrMeta(r, w)
+	room_name := r.URL.Query().Get("room_name")
+	fmt.Println(room_name)
+	var RoomDetails models.Interview
+
+	if len(room_name) == 0 {
+		helpers.RespondQueryParamsNotFound(fmt.Errorf("query params not found"), &Errmeta)
+		return
+	}
+
+	client := db.Pg.GetClient()
+
+	res := client.Where("room_name = ?", room_name).First(&RoomDetails)
+
+	if res.Error != nil {
+		helpers.RespondDbFailed(res.Error, &Errmeta)
+		return
+	}
+
+	if res.RowsAffected == 0 && RoomDetails.Status == "" {
+		helpers.RespondTwilioRoomRoomNotFound(fmt.Errorf("%s", error_handler.TwilioRoomNotFound), &Errmeta)
+		return
+	}
+
+	data, err := json.Marshal(schemas.RoomDetails{
+		RoomName:         room_name,
+		Token:            RoomDetails.Token,
+		VideoUrl:         RoomDetails.VideoUrl,
+		RoomStatus:       RoomDetails.Status,
+		ProcessingStatus: RoomDetails.ProcessingStatus,
+	})
+
+	if err != nil {
+		helpers.RespondJsonEncodeErr(err, &Errmeta)
+		return
+	}
+
+	helpers.SendResponse(w, data)
+}

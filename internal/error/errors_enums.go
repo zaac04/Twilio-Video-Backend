@@ -53,4 +53,6 @@ const (
 	TwilioRoomCloseError       = "Failed to close Twilio Room"
 	TwilioRoomAlreadyClosed    = "Twilio Room Already closed"
 	TwilioRoomNotFound         = "Twilio Room Not Found"
+	TwilioVideoNotFound        = "Twilio Video Not Found"
+	QueryParamsNotFound        = "Query Params are missing"
 )

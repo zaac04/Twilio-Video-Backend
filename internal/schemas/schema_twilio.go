@@ -51,3 +51,15 @@ type MediaConvertMPDEvent struct {
 		} `json:"outputGroupDetails,omitempty"` // Optional
 	} `json:"detail"`
 }
+
+type RoomDetails struct {
+	RoomName         string `json:"room_name"`
+	Token            string `json:"jwt_token,omitempty"`
+	VideoUrl         string `json:"video_url,omitempty"`
+	RoomStatus       string `json:"room_status"`
+	ProcessingStatus string `json:"processing_status,omitempty"`
+}
+
+type GetVideoUrl struct {
+	VideoUrl string `json:"video_url,omitempty"`
+}

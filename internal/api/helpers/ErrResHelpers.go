@@ -21,6 +21,13 @@ func RespondJsonEncodeErr(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	ErrMeta.Writer.Write(ErrResponse)
 }
 
+func RespondQueryParamsNotFound(err error, ErrMeta *error_handler.ErrorResponseMeta) {
+	var ErrResponse []byte
+	ErrMeta.SetLogs(err, error_handler.QueryParamsNotFound, error_handler.QueryParamsNotFound, 400, true)
+	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
+	ErrMeta.Writer.Write(ErrResponse)
+}
+
 func RespondIoErr(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
 	ErrMeta.SetLogs(err, enums.IOReadErr, enums.InternalError, http.StatusInternalServerError, false)
@@ -45,6 +52,13 @@ func RespondTwilioRoomAlreadyClosed(err error, ErrMeta *error_handler.ErrorRespo
 func RespondTwilioRoomRoomNotFound(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
 	ErrMeta.SetLogs(err, error_handler.TwilioRoomNotFound, error_handler.TwilioRoomNotFound, http.StatusNotFound, true)
+	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
+	ErrMeta.Writer.Write(ErrResponse)
+}
+
+func RespondTwilioVideoNotFound(err error, ErrMeta *error_handler.ErrorResponseMeta) {
+	var ErrResponse []byte
+	ErrMeta.SetLogs(err, error_handler.TwilioVideoNotFound, error_handler.TwilioVideoNotFound, http.StatusNotFound, true)
 	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
 	ErrMeta.Writer.Write(ErrResponse)
 }
