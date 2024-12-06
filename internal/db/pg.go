@@ -6,7 +6,6 @@ import (
 	"log"
 	"stargazer/video-recording/config"
 	"stargazer/video-recording/internal/enums"
-	error_handler "stargazer/video-recording/internal/error"
 	"stargazer/video-recording/internal/models"
 	"stargazer/video-recording/internal/utils"
 
@@ -20,21 +19,20 @@ type Postgres struct {
 	client *gorm.DB
 }
 
-func (pg *Postgres) Connect() {
+func (pg *Postgres) Connect() error {
 	var err error
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", config.App.DB_HOST, config.App.DB_USER, config.App.DB_PASS, config.App.DB_NAME, config.App.DB_PORT)
 	fmt.Println(dsn)
 	pg.client, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		utils.LogError(err, "", error_handler.PosgresAuthFailed, error_handler.PosgresAuthFailed)
-	}
+	return err
 }
 
-func (pg *Postgres) MigrateTables() {
+func (pg *Postgres) MigrateTables() error {
 	err := pg.client.AutoMigrate(models.Interview{}, models.ParticipantStatus{}, models.ParticipantStatus{})
 	if err != nil {
 		utils.CheckError(err, enums.MigrationsFailed)
 	}
+	return err
 }
 
 func (pg *Postgres) GetClient() *gorm.DB {

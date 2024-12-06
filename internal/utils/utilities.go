@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"stargazer/video-recording/config"
 )
@@ -30,4 +31,10 @@ func GetClientIP(r *http.Request) string {
 		}
 	}
 	return ip
+}
+
+func ExitOnError(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }

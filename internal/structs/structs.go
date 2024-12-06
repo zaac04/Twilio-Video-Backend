@@ -40,4 +40,9 @@ type AppConfig struct {
 	DB_NAME  string `env:"name:DB_NAME"`
 	DB_USER  string `env:"name:DB_USER"`
 	DB_PASS  string `env:"name:DB_PASS"`
+
+	SERVICE_KEY  string `env:"name:SERVICE_KEY"`
+	AUTH_KEY     string `env:"name:AUTH_KEY"`
+	AUTH_SVC_URL string `env:"name:AUTH_SVC_URL"`
+	SERVICE_NAME string `env:"SERVICE_NAME"`
 }

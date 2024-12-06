@@ -32,21 +32,25 @@ func main() {
 	})
 
 	router.Group(func(r chi.Router) {
-		r.Post("/create_room", handlers.CreateRoom) //TODO:Interservice
-		r.Post("/close_room", handlers.CloseRoom)   //TODO:Interservice
+		r.Use(middlewares.InterServiceAuth)
+		r.Post("/create_room", handlers.CreateRoom)
+		r.Post("/close_room", handlers.CloseRoom)
 		r.Post("/delete_all_rooms", handlers.DeleteAllRoom)
-		r.Get("/get_all_rooms", handlers.GetAllRooms) //TODO:Interservice
+		r.Get("/get_all_rooms", handlers.GetAllRooms)
 		r.Post("/get_all_recordings", handlers.GetAllRecordings)
-		r.Post("/media_convert_callback", handlers.MediaConvertCallback)
 
 		//TODO:Add GetRoomDetails
 		//TODO:Add GetVideoUrl
-
 	})
 
 	router.Group(func(r chi.Router) {
 		r.Use(middlewares.AuthenticateTwilio)
 		r.Post("/status_call_back", handlers.RecordingStatusCallback)
+	})
+
+	router.Group(func(r chi.Router) {
+		r.Use(middlewares.MediaConvertAuth)
+		r.Post("/media_convert_callback", handlers.MediaConvertCallback)
 	})
 
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
