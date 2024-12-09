@@ -46,7 +46,7 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 			if (interview.ProcessingStatus == enums.MediaConvertFinished) || (interview.ProcessingStatus == enums.MediaConvertFailed) {
 				return fmt.Errorf("media convert job alread completed %s ", payload.Detail.JobID) // Skip update if already processing or completed
 			}
-			//TODO: replace url with cloudfront url
+
 			if payload.Detail.Status == "COMPLETE" {
 				interview.ProcessingStatus = enums.MediaConvertFinished
 				interview.VideoUrl = payload.Detail.OutputGroupDetails[0].PlaylistFilePaths[0]

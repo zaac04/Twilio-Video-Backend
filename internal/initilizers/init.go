@@ -6,13 +6,14 @@ import (
 	"stargazer/video-recording/internal/db"
 	"stargazer/video-recording/internal/utils"
 	"stargazer/video-recording/internal/yad"
+	"stargazer/video-recording/pkg/aws/iam"
 )
 
 func Initialize_backend(env_file string) {
 	config.LoadEnv(env_file)
 	yad.InitializeLogger()
 
-	// utils.ExitOnError(iam.HasPermissions())
+	utils.ExitOnError(iam.HasPermissions())
 	utils.ExitOnError(db.Pg.Connect())
 	utils.ExitOnError(db.Pg.MigrateTables())
 	utils.ExitOnError(comms.AuthenticateService())
