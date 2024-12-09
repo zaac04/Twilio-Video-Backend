@@ -7,8 +7,6 @@ import (
 	"stargazer/video-recording/internal/schemas"
 	"stargazer/video-recording/internal/structs"
 	"stargazer/video-recording/internal/utils"
-
-	"strings"
 )
 
 type ErrorResponseMeta struct {
@@ -50,14 +48,6 @@ func (e *ErrorResponseMeta) SetValidationError(err error) {
 	e.ExternalLog = ValidationFailed
 	e.Hint = true
 	e.InternalLog = err.Error()
-	e.StatusCode = http.StatusBadRequest
-}
-
-func (e *ErrorResponseMeta) SetFileDecodeError() {
-	e.Err = errors.New(strings.ToLower(FileDecodeFailed))
-	e.ExternalLog = FileDecodeFailed
-	e.Hint = false
-	e.InternalLog = FileDecodeFailed
 	e.StatusCode = http.StatusBadRequest
 }
 

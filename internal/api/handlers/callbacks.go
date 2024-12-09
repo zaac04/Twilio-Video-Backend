@@ -122,7 +122,7 @@ func RecordingStatusCallback(w http.ResponseWriter, r *http.Request) {
 
 		err = helpers.OnRecordingCompleted(r)
 		if err != nil {
-			utils.LogError(err, ErrMeta.ReqId, enums.PgUpdateFailed, enums.InternalError)
+			utils.LogError(err, ErrMeta.ReqId, error_handler.PgUpdateFailed, error_handler.InternalError)
 			return
 		}
 

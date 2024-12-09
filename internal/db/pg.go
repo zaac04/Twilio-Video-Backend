@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"stargazer/video-recording/config"
-	"stargazer/video-recording/internal/enums"
+	error_handler "stargazer/video-recording/internal/error"
 	"stargazer/video-recording/internal/models"
 	"stargazer/video-recording/internal/utils"
 
@@ -30,7 +30,7 @@ func (pg *Postgres) Connect() error {
 func (pg *Postgres) MigrateTables() error {
 	err := pg.client.AutoMigrate(models.Interview{}, models.ParticipantStatus{}, models.ParticipantStatus{})
 	if err != nil {
-		utils.CheckError(err, enums.MigrationsFailed)
+		utils.CheckError(err, error_handler.MigrationsFailed)
 	}
 	return err
 }

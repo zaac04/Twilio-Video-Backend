@@ -29,7 +29,7 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 	res := db.Where("room_name = ?", reqBody.RoomName).Find(&RoomDetails)
 	if res.Error != nil {
 		helpers.RespondDbFailed(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.DBRetrieveFailed, enums.InternalError)
+		utils.LogError(err, ErrMeta.ReqId, error_handler.DBRetrieveFailed, error_handler.InternalError)
 		return
 	}
 
@@ -40,7 +40,7 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 
 	if res.RowsAffected != 0 && RoomDetails.Status != "" {
 		helpers.RespondTwilioRoomAlreadyExists(fmt.Errorf("%s", error_handler.TwilioRoomAlreadyExist), &ErrMeta)
-		utils.LogError(fmt.Errorf("%s", error_handler.TwilioRoomAlreadyExist), ErrMeta.ReqId, error_handler.TwilioRoomAlreadyExist, enums.InternalError)
+		utils.LogError(fmt.Errorf("%s", error_handler.TwilioRoomAlreadyExist), ErrMeta.ReqId, error_handler.TwilioRoomAlreadyExist, error_handler.InternalError)
 		return
 	}
 
@@ -48,13 +48,13 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 	token, roomId, err := helpers.CreateRoomHelper(&ErrMeta, &reqBody)
 	if err != nil {
 		helpers.RespondTwilioRoomCreationError(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.TwilioRoomCreationError, enums.InternalError)
+		utils.LogError(err, ErrMeta.ReqId, error_handler.TwilioRoomCreationError, error_handler.InternalError)
 		return
 	}
 
 	if db.Create(&models.Interview{RoomName: reqBody.RoomName, RoomSid: roomId, Token: token, Status: enums.RoomStatusOnGoing}).Error != nil {
 		helpers.RespondDbFailed(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.DBEntryFailed, enums.InternalError)
+		utils.LogError(err, ErrMeta.ReqId, error_handler.DBEntryFailed, error_handler.InternalError)
 		return
 	}
 

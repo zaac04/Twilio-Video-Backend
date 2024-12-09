@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"net/http"
-	"stargazer/video-recording/internal/enums"
 	error_handler "stargazer/video-recording/internal/error"
 	"stargazer/video-recording/internal/structs"
 )
@@ -30,7 +29,7 @@ func RespondQueryParamsNotFound(err error, ErrMeta *error_handler.ErrorResponseM
 
 func RespondIoErr(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
-	ErrMeta.SetLogs(err, enums.IOReadErr, enums.InternalError, http.StatusInternalServerError, false)
+	ErrMeta.SetLogs(err, error_handler.IOReadErr, error_handler.InternalError, http.StatusInternalServerError, false)
 	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
 	ErrMeta.Writer.Write(ErrResponse)
 }
@@ -65,7 +64,7 @@ func RespondTwilioVideoNotFound(err error, ErrMeta *error_handler.ErrorResponseM
 
 func RespondTwilioRoomCreationError(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
-	ErrMeta.SetLogs(err, error_handler.TwilioRoomCloseError, enums.InternalError, http.StatusBadRequest, true)
+	ErrMeta.SetLogs(err, error_handler.TwilioRoomCloseError, error_handler.InternalError, http.StatusBadRequest, true)
 	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
 	ErrMeta.Writer.Write(ErrResponse)
 }
