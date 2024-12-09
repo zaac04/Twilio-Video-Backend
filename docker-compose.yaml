@@ -4,21 +4,23 @@ services:
     build: 
       context: .
       dockerfile: ./deploy/Dockerfile
-    env_file: config.env
+    env_file: .env
     ports:
-      - 4001:4000
+      - ${APP_PORT}:${APP_PORT}
 
-  pg:
+  video-service-db:
     image: postgres:latest
     restart: always
+    env_file:
+      -  .env
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=8242
-      - POSTGRES_DB=whitelake
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
     volumes:
       - postgres-db:/var/lib/postgresql/
     ports:
-      - "5432:5432"
+      - ${DB_PORT}:5432
 
 volumes:
   postgres-db:
