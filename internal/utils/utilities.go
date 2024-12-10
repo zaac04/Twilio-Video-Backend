@@ -17,7 +17,7 @@ func GetS3Uri(roomName, object string) string {
 }
 
 func GetS3SaveUri(roomName string) string {
-	return fmt.Sprintf("s3://%s/%s/%s/%s", config.App.S3_BUCKET_NAME, config.App.S3_MEDIA_CONVERT_PREFIX, roomName, "final")
+	return fmt.Sprintf("s3://%s/%s/%s/%s", config.App.S3_BUCKET_NAME, config.App.S3_MEDIA_CONVERT_PREFIX, roomName, config.App.MEDIA_CONVERT_SAVE_FILE_NAME)
 }
 
 func GetClientIP(r *http.Request) string {

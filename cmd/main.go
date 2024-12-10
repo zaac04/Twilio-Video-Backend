@@ -37,7 +37,6 @@ func main() {
 		r.Post("/close_room", handlers.CloseRoom)
 		r.Post("/delete_all_rooms", handlers.DeleteAllRoom)
 		r.Get("/get_all_rooms", handlers.GetAllRooms)
-		r.Post("/get_all_recordings", handlers.GetAllRecordings)
 		r.Get("/get_room_details", handlers.GetRoomDetails)
 		r.Get("/get_video_url", handlers.GetVideoUrl)
 	})
