@@ -44,5 +44,7 @@ type AppConfig struct {
 	SERVICE_KEY  string `env:"name:SERVICE_KEY"`
 	AUTH_KEY     string `env:"name:AUTH_KEY"`
 	AUTH_SVC_URL string `env:"name:AUTH_SVC_URL"`
-	SERVICE_NAME string `env:"SERVICE_NAME"`
+	SERVICE_NAME string `env:"name:SERVICE_NAME"`
+
+	CORS_ALLOWED_ORIGINS string `env:"name:CORS_ALLOWED_ORIGINS"`
 }

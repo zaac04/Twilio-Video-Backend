@@ -1,14 +1,16 @@
 package middlewares
 
-import "net/http"
+import (
+	"net/http"
+	"stargazer/video-recording/config"
+	"strings"
+)
 
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// List of allowed origins
-		allowedOrigins := []string{
-			"http://localhost:5173", // Origin 1
-			"https://tweb.kytt.site",
-		}
+
+		allowedOrigins := strings.Split(config.App.CORS_ALLOWED_ORIGINS, ",")
 
 		// Get the origin of the incoming request
 		origin := r.Header.Get("Origin")
