@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	AppConfig "stargazer/video-recording/config"
+	"stargazer/video-recording/internal/enums"
 	"stargazer/video-recording/internal/utils"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -48,6 +49,9 @@ func (mc *MediaConvert) CreateJob(File []File, def []Definition, output_location
 	createJob := mediaconvert.CreateJobInput{
 		Role:     utils.StringPtr(AppConfig.App.MEDIA_CONVERT_ROLE),
 		Settings: &mc.JobSettings,
+		UserMetadata: map[string]string{
+			enums.ENV: AppConfig.App.ENV,
+		},
 	}
 
 	out, err := mc.client.CreateJob(context.TODO(), &createJob)
@@ -56,7 +60,6 @@ func (mc *MediaConvert) CreateJob(File []File, def []Definition, output_location
 	}
 
 	return *out.Job.Id, nil
-
 }
 
 func (mc *MediaConvert) init(output_location string) {

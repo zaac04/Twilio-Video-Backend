@@ -49,4 +49,5 @@ type AppConfig struct {
 	SERVICE_NAME string `env:"name:SERVICE_NAME"`
 
 	CORS_ALLOWED_ORIGINS string `env:"name:CORS_ALLOWED_ORIGINS"`
+	ENV                  string `env:"name:ENV"`
 }

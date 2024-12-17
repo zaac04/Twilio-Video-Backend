@@ -26,4 +26,5 @@ const (
 	RoomStatusOnGoing      = "On-Going"
 	RoomStatusClosed       = "Closed"
 	Ok                     = "ok"
+	ENV                    = "ENV"
 )
