@@ -31,5 +31,5 @@ fi
 
 #builds image
 echo "Building image $REPO:$TAG"
-docker build -t "$REPO:$TAG" -f ../deploy/Dockerfile ../
+docker build --no-cache -t "$REPO:$TAG" -f ../deploy/Dockerfile ../
 echo "Build Success $REPO:$TAG"

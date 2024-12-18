@@ -9,5 +9,5 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o video_service ./cmd/
 # Build
 FROM alpine
 WORKDIR /app
-COPY --from=build /app .
+COPY --from=build /app/video_service ./cmd/
 CMD [ "./video_service" ]
