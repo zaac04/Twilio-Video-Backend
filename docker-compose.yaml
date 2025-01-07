@@ -7,6 +7,8 @@ services:
     env_file: .env
     ports:
       - ${APP_PORT}:${APP_PORT}
+    depends_on:
+      - video-service-db
 
   video-service-db:
     image: postgres:latest
@@ -20,7 +22,7 @@ services:
     volumes:
       - postgres-db:/var/lib/postgresql/
     ports:
-      - ${DB_PORT}:5432
+      - ${DB_PORT_EXTERNAL}:5432
 
 volumes:
   postgres-db:

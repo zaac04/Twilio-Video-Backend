@@ -37,4 +37,4 @@ echo "Logging in to AWS account $TEMP_ACCOUNT_ID.dkr.ecr.$TEMP_REGION.amazonaws.
 aws ecr get-login-password --region "$TEMP_REGION" --profile "$TEMP_PROFILE"|docker login --username AWS --password-stdin "$TEMP_ACCOUNT_ID".dkr.ecr."$TEMP_REGION".amazonaws.com
 
 echo "Pushing image to ECR"
-docker push "$ECR_REPOSITORY:$tag"
+docker push "$TEMP_IMAGE"

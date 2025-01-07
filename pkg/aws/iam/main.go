@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	AppConfig "stargazer/video-recording/config"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -23,11 +25,17 @@ func HasPermissions() error {
 	}
 
 	svc := iam.NewFromConfig(cfg)
-	actions := []string{"mediaconvert:CreateJob", "s3:CopyObject", "s3:DeleteObject", "s3:HeadObject"}
+	actions := []string{"s3:CopyObject", "s3:HeadObject"}
+
+	resourceArns := []string{
+		fmt.Sprintf("arn:aws:s3:::%s", AppConfig.App.S3_BUCKET_NAME),
+		fmt.Sprintf("arn:aws:s3:::%s/*", AppConfig.App.S3_BUCKET_NAME),
+	}
 
 	result, err := svc.SimulatePrincipalPolicy(context.TODO(), &iam.SimulatePrincipalPolicyInput{
 		PolicySourceArn: out.Arn,
 		ActionNames:     actions,
+		ResourceArns:    resourceArns,
 	})
 
 	if err != nil {

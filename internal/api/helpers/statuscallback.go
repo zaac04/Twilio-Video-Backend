@@ -225,7 +225,7 @@ func triggerMediaConversion(roomName string) error {
 
 	jobId, err := mc.CreateJob(videos, []mediaconvert.Definition{mediaconvert.SD480p, mediaconvert.SD360p}, utils.GetS3SaveUri(roomName))
 	if err != nil {
-		return fmt.Errorf("error creating mediaconvert Job")
+		return err
 	}
 
 	return db.ExecuteTransaction(func(tx *gorm.DB) error {
