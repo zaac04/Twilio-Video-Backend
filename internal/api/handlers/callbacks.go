@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"stargazer/video-recording/config"
@@ -70,15 +71,17 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := comms.Interview_SVC.Request("POST", fmt.Sprintf("/api/v1/interviews/video/%s/", interview.RoomName), payloads)
-	var responsejson interface{}
-	utils.UnmarshalReqBodyAllowUnknown(resp.Body, &responsejson)
 
 	if resp.StatusCode != http.StatusOK || err != nil {
-		utils.LogError(fmt.Errorf("error in making interservice call, %v, %+v", err, responsejson), ErrMeta.ReqId, error_handler.InternalCommsError, error_handler.InternalCommsError)
+		utils.LogError(fmt.Errorf("error in making interservice call with status code, %d, %v", resp.StatusCode, err), ErrMeta.ReqId, error_handler.InternalCommsError, error_handler.InternalCommsError)
 		return
 	}
 
-	fmt.Println("Successfully made request", responsejson)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Error reading response body: %v", err)
+	}
+	fmt.Printf("Successfully made request with payload: %+v, %s \n", payloads, body)
 }
 
 func RecordingStatusCallback(w http.ResponseWriter, r *http.Request) {
