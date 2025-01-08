@@ -50,4 +50,6 @@ type AppConfig struct {
 
 	CORS_ALLOWED_ORIGINS string `env:"name:CORS_ALLOWED_ORIGINS"`
 	ENV                  string `env:"name:ENV"`
+	INTERVIEW_SVC_URL    string `env:"INTERVIEW_SVC_URL"`
+	INTERVIEW_SVC_NAME   string `env:"INTERVIEW_SVC_NAME"`
 }

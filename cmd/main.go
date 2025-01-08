@@ -31,24 +31,26 @@ func main() {
 		r.Get("/ping", handlers.Pong)
 	})
 
-	router.Group(func(r chi.Router) {
-		r.Use(middlewares.InterServiceAuth)
-		r.Post("/create_room", handlers.CreateRoom)
-		r.Post("/close_room", handlers.CloseRoom)
-		r.Post("/delete_all_rooms", handlers.DeleteAllRoom)
-		r.Get("/get_all_rooms", handlers.GetAllRooms)
-		r.Get("/get_room_details", handlers.GetRoomDetails)
-		r.Get("/get_video_url", handlers.GetVideoUrl)
-	})
+	router.Route("/api/v1", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.InterServiceAuth)
+			r.Post("/create_room", handlers.CreateRoom)
+			r.Post("/close_room", handlers.CloseRoom)
+			r.Post("/delete_all_rooms", handlers.DeleteAllRoom)
+			r.Get("/get_all_rooms", handlers.GetAllRooms)
+			r.Get("/get_room_details", handlers.GetRoomDetails)
+			r.Get("/get_video_url", handlers.GetVideoUrl)
+		})
 
-	router.Group(func(r chi.Router) {
-		r.Use(middlewares.AuthenticateTwilio)
-		r.Post("/status_call_back", handlers.RecordingStatusCallback)
-	})
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.AuthenticateTwilio)
+			r.Post("/status_call_back", handlers.RecordingStatusCallback)
+		})
 
-	router.Group(func(r chi.Router) {
-		r.Use(middlewares.MediaConvertAuth)
-		r.Post("/media_convert_callback", handlers.MediaConvertCallback)
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.MediaConvertAuth)
+			r.Post("/media_convert_callback", handlers.MediaConvertCallback)
+		})
 	})
 
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {

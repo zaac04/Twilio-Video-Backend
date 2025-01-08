@@ -8,14 +8,15 @@ import (
 	"strings"
 )
 
+var accessToken string
+var refreshToken string
+
 type Service struct {
-	ServiceName  string
-	AuthHost     string
-	PrivateKey   *rsa.PrivateKey
-	AuthKey      *rsa.PublicKey
-	AccessToken  string
-	RefreshToken string
-	BaseUrl      string
+	ServiceName string
+	AuthHost    string
+	PrivateKey  *rsa.PrivateKey
+	AuthKey     *rsa.PublicKey
+	BaseUrl     string
 }
 
 type AuthResponse struct {
@@ -25,7 +26,7 @@ type AuthResponse struct {
 	} `json:"data"`
 }
 
-func NewService(serviceName, servicePemPath, authPemPath, authHost string, BaseUrl string) (*Service, error) {
+func NewService(serviceName, servicePemPath, authPemPath, authHost string, baseUrl string) (*Service, error) {
 	privateKey, err := loadPrivateKey(servicePemPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load private key: %w", err)
@@ -41,12 +42,9 @@ func NewService(serviceName, servicePemPath, authPemPath, authHost string, BaseU
 		AuthHost:    authHost,
 		PrivateKey:  privateKey,
 		AuthKey:     authKey,
-		BaseUrl:     BaseUrl,
+		BaseUrl:     baseUrl,
 	}
 
-	if err := service.authenticate(); err != nil {
-		return nil, err
-	}
 	return service, nil
 }
 

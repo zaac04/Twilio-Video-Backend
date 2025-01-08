@@ -11,8 +11,8 @@ import (
 )
 
 func (s *Service) Request(method, endpoint string, payload map[string]string) (*http.Response, error) {
-	if claims, err := s.validateToken(s.AccessToken); err != nil || claims == nil {
-		if claims, err := s.validateToken(s.RefreshToken); err != nil && claims == nil {
+	if claims, err := s.validateToken(accessToken); err != nil || claims == nil {
+		if claims, err := s.validateToken(refreshToken); err != nil && claims == nil {
 			if err := s.authenticate(); err != nil {
 				return nil, err
 			}
@@ -24,17 +24,18 @@ func (s *Service) Request(method, endpoint string, payload map[string]string) (*
 	}
 	headers := map[string]string{
 		"Content-Type":  "application/json",
-		"Authorization": "Bearer " + s.AccessToken,
+		"Authorization": "Bearer " + accessToken,
 	}
-	return s.makeHTTPRequest(method, endpoint, payload, headers)
-}
 
-func (s *Service) makeHTTPRequest(method, endpoint string, payload map[string]string, headers map[string]string) (*http.Response, error) {
-	endpoint, err := url.JoinPath(s.BaseUrl, endpoint)
+	endpoint, err = url.JoinPath(s.BaseUrl, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to join url: %s", err)
 	}
 
+	return s.makeHTTPRequest(method, endpoint, payload, headers)
+}
+
+func (s *Service) makeHTTPRequest(method, endpoint string, payload map[string]string, headers map[string]string) (*http.Response, error) {
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", error_handler.ErrorEncodingJson, err)
@@ -52,5 +53,3 @@ func (s *Service) makeHTTPRequest(method, endpoint string, payload map[string]st
 	client := &http.Client{Timeout: 10 * time.Second}
 	return client.Do(req)
 }
-
-

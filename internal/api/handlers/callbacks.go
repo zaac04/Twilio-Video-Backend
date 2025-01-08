@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"stargazer/video-recording/config"
 	"stargazer/video-recording/internal/api/helpers"
+	"stargazer/video-recording/internal/comms"
 	"stargazer/video-recording/internal/db"
 	"stargazer/video-recording/internal/enums"
 	error_handler "stargazer/video-recording/internal/error"
@@ -20,7 +21,7 @@ import (
 )
 
 func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
-
+	ErrMeta := helpers.GenerateErrMeta(r, w)
 	var payload schemas.MediaConvertMPDEvent
 	err := utils.UnmarshalReqBodyAllowUnknown(r.Body, &payload)
 
@@ -29,9 +30,9 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var interview models.Interview
 	db.ExecuteTransaction(
 		func(tx *gorm.DB) error {
-			var interview models.Interview
 
 			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 				Where("media_convert_job_id = ?", payload.Detail.JobID).
@@ -64,6 +65,20 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
+	payloads := map[string]string{
+		"recording_url": helpers.ConstructVideoUrl(interview.VideoUrl),
+	}
+
+	resp, err := comms.Interview_SVC.Request("POST", fmt.Sprintf("/api/v1/interviews/video/%s/", interview.RoomName), payloads)
+	var responsejson interface{}
+	utils.UnmarshalReqBodyAllowUnknown(resp.Body, &responsejson)
+
+	if resp.StatusCode != http.StatusOK || err != nil {
+		utils.LogError(fmt.Errorf("error in making interservice call, %s", err), ErrMeta.ReqId, error_handler.InternalCommsError, error_handler.InternalCommsError)
+		return
+	}
+
+	fmt.Println("Successfully made request", responsejson)
 }
 
 func RecordingStatusCallback(w http.ResponseWriter, r *http.Request) {

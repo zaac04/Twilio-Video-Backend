@@ -10,8 +10,7 @@ services:
     depends_on:
       video-service-db:
         condition: service_healthy
-
-
+    hostname: video.app
       
   video-service-db:
     image: postgres:latest

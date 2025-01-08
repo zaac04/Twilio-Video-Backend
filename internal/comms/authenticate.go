@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	error_handler "stargazer/video-recording/internal/error"
 	"stargazer/video-recording/internal/utils"
 	"time"
@@ -28,13 +29,19 @@ func (s *Service) authenticate() error {
 		"signature": signature,
 	}
 
-	url := "/login/"
+	endpoint := "/login/"
+
+	endpoint, err = url.JoinPath(s.AuthHost, endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to join url: %s", err)
+	}
+	fmt.Println(s.AuthHost, "endpoint")
 	headers := map[string]string{
 		"Content-Type": "application/json",
 		"SERVICE":      s.ServiceName,
 	}
 
-	response, err := s.makeHTTPRequest("POST", url, payload, headers)
+	response, err := s.makeHTTPRequest("POST", endpoint, payload, headers)
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -49,10 +56,10 @@ func (s *Service) authenticate() error {
 		return fmt.Errorf("%s: %s", error_handler.ErrorDecodingJson, err)
 	}
 
-	s.AccessToken = auth_response.Data.AccessToken
-	s.RefreshToken = auth_response.Data.RefreshToken
+	accessToken = auth_response.Data.AccessToken
+	refreshToken = auth_response.Data.RefreshToken
 
-	fmt.Println(s.AccessToken)
+	fmt.Println(accessToken)
 	return nil
 }
 
@@ -78,12 +85,18 @@ func (s *Service) validateToken(tokenString string) (map[string]interface{}, err
 
 func (s *Service) refreshToken() error {
 	payload := map[string]string{
-		"refresh_token": s.RefreshToken,
+		"refresh_token": refreshToken,
 	}
-	url := "/refresh/"
+
+	endpoint := "/refresh/"
+	endpoint, err = url.JoinPath(s.AuthHost, endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to join url: %s", err)
+	}
+
 	headers := map[string]string{"Content-Type": "application/json"}
 
-	response, err := s.makeHTTPRequest("POST", url, payload, headers)
+	response, err := s.makeHTTPRequest("POST", endpoint, payload, headers)
 	if err != nil {
 		return fmt.Errorf("refresh token failed: %w", err)
 	}
@@ -98,8 +111,8 @@ func (s *Service) refreshToken() error {
 		return fmt.Errorf("%s: %s", error_handler.ErrorDecodingJson, err)
 	}
 
-	s.AccessToken = auth_response.Data.AccessToken
-	s.RefreshToken = auth_response.Data.RefreshToken
+	accessToken = auth_response.Data.AccessToken
+	refreshToken = auth_response.Data.RefreshToken
 
 	return nil
 }
