@@ -74,7 +74,7 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 	utils.UnmarshalReqBodyAllowUnknown(resp.Body, &responsejson)
 
 	if resp.StatusCode != http.StatusOK || err != nil {
-		utils.LogError(fmt.Errorf("error in making interservice call, %s", err), ErrMeta.ReqId, error_handler.InternalCommsError, error_handler.InternalCommsError)
+		utils.LogError(fmt.Errorf("error in making interservice call, %v, %+v", err, responsejson), ErrMeta.ReqId, error_handler.InternalCommsError, error_handler.InternalCommsError)
 		return
 	}
 
