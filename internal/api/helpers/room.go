@@ -9,13 +9,13 @@ import (
 
 func CreateRoomHelper(ErrMeta *error_handler.ErrorResponseMeta, createRoomInput *schemas.CreateRoom) (token string, RoomSid string, err error) {
 	twilio := twilio.CreateClient()
+	var timeout int32 = 60
+	var expiry int32 = 180 * 60
 
-	if createRoomInput.Expiry == 0 {
-		createRoomInput.Expiry = 60
+	if createRoomInput.Expiry > 0 {
+		expiry = createRoomInput.Expiry * 60
+		timeout = min(createRoomInput.Expiry, timeout)
 	}
-
-	timeout := createRoomInput.Expiry
-	expiry := createRoomInput.Expiry * 60 //convert minutes to seconds
 
 	fmt.Println(timeout, expiry)
 	RoomSid, err = twilio.CreateRoom(createRoomInput.RoomName, expiry, timeout)
