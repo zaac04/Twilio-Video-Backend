@@ -9,6 +9,7 @@ import (
 	"stargazer/video-recording/internal/enums"
 	"stargazer/video-recording/internal/models"
 	"stargazer/video-recording/internal/utils"
+	"stargazer/video-recording/internal/yad"
 	"stargazer/video-recording/pkg/aws/mediaconvert"
 	"stargazer/video-recording/pkg/twilio"
 
@@ -85,7 +86,7 @@ func OnParticipantConneted(r *http.Request) error {
 	return err
 }
 
-func TriggerMediaConvert(r *http.Request) (err error) {
+func TriggerMediaConvert(r *http.Request, span *yad.Span) (err error) {
 	roomName := r.FormValue("RoomName")
 	roomStatus := r.FormValue("RoomStatus")
 	roomSid := r.FormValue("RoomSid")
@@ -98,12 +99,10 @@ func TriggerMediaConvert(r *http.Request) (err error) {
 		}
 	}
 	if roomStatus != "completed" {
-		log.Printf("Room %s is not completed yet, skipping trigger.", roomName)
-		return nil
+		return fmt.Errorf("room %s is not completed yet, skipping trigger", roomName)
 	}
 
-	log.Println("======================")
-	log.Println("Processing room_closed for room:", roomName)
+	span.AddEvent("Processing room_closed for room", roomName)
 
 	err = db.ExecuteTransaction(func(d *gorm.DB) error {
 		incompleteCount, err := checkIncompleteStatus(d, roomName)
@@ -112,8 +111,7 @@ func TriggerMediaConvert(r *http.Request) (err error) {
 		}
 
 		if incompleteCount > 0 {
-			log.Printf("Room %s has %d incomplete participants, skipping trigger.", roomName, incompleteCount)
-			return fmt.Errorf("triggering failed due to ongoing recording session")
+			return fmt.Errorf("triggering failed due to ongoing recording session room %s has %d incomplete participants, skipping trigger", roomName, incompleteCount)
 		}
 		return nil
 	})
@@ -129,10 +127,10 @@ func TriggerMediaConvert(r *http.Request) (err error) {
 			if err := d.Clauses(clause.Locking{Strength: "UPDATE"}).
 				Where("room_name = ?", roomName).
 				First(&interview).Error; err != nil {
+
 				// Return early if the room doesn't exist
 				if errors.Is(err, gorm.ErrRecordNotFound) {
-					log.Printf("Room not found: %s", roomName)
-					return nil
+					return fmt.Errorf("room not found: %s", roomName)
 				}
 				return err
 			}
@@ -148,7 +146,10 @@ func TriggerMediaConvert(r *http.Request) (err error) {
 				return fmt.Errorf("error updating room processing status: %v", err)
 			}
 
-			log.Printf("Room %s status updated to %s", roomName, enums.MediaConvertStarted)
+			span.AddEvent("Room status updated", map[string]string{
+				"RoomName": roomName,
+				"Status":   enums.MediaConvertStarted,
+			})
 			return nil
 		},
 	)
@@ -162,7 +163,7 @@ func TriggerMediaConvert(r *http.Request) (err error) {
 		return fmt.Errorf("failed to trigger media conversion: %v", err)
 	}
 
-	log.Printf("Successfully triggered media conversion for room: %s during event: %s", roomName, Event)
+	span.AddEvent("Successfull Trigger", fmt.Sprintf("Successfully triggered media conversion for room: %s during event: %s", roomName, Event))
 	return nil
 }
 
@@ -192,7 +193,6 @@ func checkIncompleteStatus(tx *gorm.DB, roomName string) (int64, error) {
 	`
 
 	err := tx.Raw(query, roomName, false, false, roomName, enums.MediaConvertNotStarted).Scan(&incompleteCount).Error
-
 	return incompleteCount, err
 }
 
@@ -220,8 +220,6 @@ func triggerMediaConversion(roomName string) error {
 		videos = append(videos, video)
 	}
 	//NOTE:query ok
-
-	fmt.Println(videos)
 
 	jobId, err := mc.CreateJob(videos, []mediaconvert.Definition{mediaconvert.SD480p, mediaconvert.SD360p}, utils.GetS3SaveUri(roomName))
 	if err != nil {
