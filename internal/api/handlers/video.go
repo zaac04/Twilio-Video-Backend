@@ -12,13 +12,15 @@ import (
 )
 
 func GetVideoUrl(w http.ResponseWriter, r *http.Request) {
-	Errmeta := helpers.GenerateErrMeta(r, w)
+	ErrMeta := helpers.GenerateSpan(r, w)
 	room_name := r.URL.Query().Get("room_name")
 	fmt.Println(room_name)
 	var video_url string
 
+	ErrMeta.Span.AddEvent("Params", room_name)
+
 	if len(room_name) == 0 {
-		helpers.RespondQueryParamsNotFound(fmt.Errorf("query params not found"), &Errmeta)
+		helpers.RespondQueryParamsNotFound(fmt.Errorf("query params not found"), &ErrMeta)
 		return
 	}
 
@@ -26,12 +28,12 @@ func GetVideoUrl(w http.ResponseWriter, r *http.Request) {
 	res := client.Model(&models.Interview{}).Where("room_name = ?", room_name).Pluck("video_url", &video_url).Limit(1)
 
 	if res.Error != nil {
-		helpers.RespondDbFailed(res.Error, &Errmeta)
+		helpers.RespondDbFailed(helpers.GetDBError(res), &ErrMeta)
 		return
 	}
 
 	if res.RowsAffected == 0 || video_url == "" {
-		helpers.RespondTwilioVideoNotFound(fmt.Errorf("%s", error_handler.TwilioRoomNotFound), &Errmeta)
+		helpers.RespondTwilioVideoNotFound(fmt.Errorf("%s", error_handler.TwilioRoomNotFound), &ErrMeta)
 		return
 	}
 
@@ -42,7 +44,7 @@ func GetVideoUrl(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		helpers.RespondJsonEncodeErr(err, &Errmeta)
+		helpers.RespondJsonEncodeErr(err, &ErrMeta)
 		return
 	}
 

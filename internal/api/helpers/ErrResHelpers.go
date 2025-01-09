@@ -3,7 +3,8 @@ package helpers
 import (
 	"net/http"
 	error_handler "stargazer/video-recording/internal/error"
-	"stargazer/video-recording/internal/structs"
+	"stargazer/video-recording/internal/utils"
+	"stargazer/video-recording/internal/yad"
 )
 
 func RespondJsonDecodeErr(err error, ErrMeta *error_handler.ErrorResponseMeta) {
@@ -78,14 +79,14 @@ func RespondTwilioRoomCloseError(err error, ErrMeta *error_handler.ErrorResponse
 
 func RespondDbFailed(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
-	ErrMeta.SetLogs(err, err.Error(), err.Error(), http.StatusInternalServerError, false)
+	ErrMeta.SetLogs(err, error_handler.DBAddRetrieveFailed, err.Error(), http.StatusInternalServerError, false)
 	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
 	ErrMeta.Writer.Write(ErrResponse)
 }
 
 func RespondValidationFailed(err error, ErrMeta *error_handler.ErrorResponseMeta) {
 	var ErrResponse []byte
-	ErrMeta.SetLogs(err, err.Error(), err.Error(), http.StatusBadRequest, false)
+	ErrMeta.SetLogs(err, error_handler.ValidationFailed, err.Error(), http.StatusBadRequest, false)
 	ErrResponse = error_handler.GenerateErrorResponse(ErrMeta)
 	ErrMeta.Writer.Write(ErrResponse)
 }
@@ -101,8 +102,12 @@ func SendErrRes(res []byte, w http.ResponseWriter) {
 	w.Write(res)
 }
 
-func GenerateErrMeta(r *http.Request, w http.ResponseWriter) (ErrMeta error_handler.ErrorResponseMeta) {
-	reqCtxData := r.Context().Value(structs.ReqCtxKey("reqId")).(structs.ReqContext)
+func GenerateSpan(r *http.Request, w http.ResponseWriter) (ErrMeta error_handler.ErrorResponseMeta) {
+	reqCtxData := r.Context().Value(yad.ReqCtxKey("trace")).(yad.ReqContext)
+	trace := reqCtxData.Trace
+	span := trace.CreateSpan(utils.GetCurrentFunctionName())
+	trace.AddSpan(span)
+	reqCtxData.Span = span
 	ErrMeta.Init(w, reqCtxData)
 	return ErrMeta
 }

@@ -7,7 +7,6 @@ import (
 	"stargazer/video-recording/config"
 	error_handler "stargazer/video-recording/internal/error"
 	"stargazer/video-recording/internal/models"
-	"stargazer/video-recording/internal/utils"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -30,9 +29,9 @@ func (pg *Postgres) Connect() error {
 func (pg *Postgres) MigrateTables() error {
 	err := pg.client.AutoMigrate(models.Interview{}, models.ParticipantStatus{}, models.ParticipantStatus{})
 	if err != nil {
-		utils.CheckError(err, error_handler.MigrationsFailed)
+		return errors.Join(fmt.Errorf("%s", error_handler.MigrationsFailed), err)
 	}
-	return err
+	return nil
 }
 
 func (pg *Postgres) GetClient() *gorm.DB {

@@ -5,11 +5,12 @@ import (
 	"errors"
 	"net/http"
 	"stargazer/video-recording/internal/schemas"
-	"stargazer/video-recording/internal/structs"
-	"stargazer/video-recording/internal/utils"
+	"stargazer/video-recording/internal/yad"
 )
 
 type ErrorResponseMeta struct {
+	Trace       *yad.Trace
+	Span        *yad.Span
 	Writer      http.ResponseWriter
 	Request     *http.Request
 	Err         error
@@ -27,9 +28,11 @@ func (e *ErrorResponseMeta) SetLogs(err error, InternalLog string, ExternalLog s
 	e.Err = err
 }
 
-func (e *ErrorResponseMeta) Init(w http.ResponseWriter, reqCtx structs.ReqContext) {
+func (e *ErrorResponseMeta) Init(w http.ResponseWriter, reqCtx yad.ReqContext) {
 	e.Writer = w
 	e.ReqId = reqCtx.ReqID
+	e.Trace = reqCtx.Trace
+	e.Span = reqCtx.Span
 }
 
 func (e *ErrorResponseMeta) SetHint(hint bool) {
@@ -42,16 +45,19 @@ func (e *ErrorResponseMeta) SetJsonEncodeError(err error) {
 	e.Hint = false
 	e.InternalLog = ErrorEncodingJson
 	e.StatusCode = http.StatusInternalServerError
+	e.Span.AddEvent(ErrorEncodingJson, err.Error())
 }
+
 func (e *ErrorResponseMeta) SetValidationError(err error) {
 	e.Err = err
 	e.ExternalLog = ValidationFailed
 	e.Hint = true
 	e.InternalLog = err.Error()
 	e.StatusCode = http.StatusBadRequest
+	e.Span.AddEvent(ValidationFailed, err.Error())
 }
 
-func (e *ErrorResponseMeta) SetUnHandledInternalError(w http.ResponseWriter, reqCtx structs.ReqContext, err error) {
+func (e *ErrorResponseMeta) SetUnHandledInternalError(w http.ResponseWriter, reqCtx yad.ReqContext, err error) {
 	e.Writer = w
 	e.ReqId = reqCtx.ReqID
 	e.ExternalLog = UnhandledInternalError
@@ -59,6 +65,7 @@ func (e *ErrorResponseMeta) SetUnHandledInternalError(w http.ResponseWriter, req
 	e.Hint = true
 	e.InternalLog = UnhandledInternalError
 	e.StatusCode = http.StatusInternalServerError
+	e.Span.AddEvent(UnhandledInternalError, err.Error())
 }
 
 func (e *ErrorResponseMeta) SetJsonDecodeError(err error) {
@@ -67,19 +74,27 @@ func (e *ErrorResponseMeta) SetJsonDecodeError(err error) {
 	e.Hint = true
 	e.InternalLog = ErrorDecodingJson
 	e.StatusCode = http.StatusBadRequest
+	e.Span.AddEvent(ErrorDecodingJson, err.Error())
 }
 
 func GenerateErrorResponse(meta *ErrorResponseMeta) (ErrResponse []byte) {
 	New_Err := errors.New(meta.Err.Error())
+
 	jsonRes := schemas.ErrResponse{
 		Error: meta.ExternalLog,
 	}
 	if meta.Hint {
 		jsonRes.Hint = New_Err.Error()
 	}
-	utils.LogError(meta.Err, meta.ReqId, meta.InternalLog, meta.ExternalLog)
+
+	if meta.Err != nil {
+		meta.Span.AddEvent(meta.InternalLog, meta.Err.Error())
+	}
+
 	ErrResponse, err := json.Marshal(jsonRes)
-	utils.LogError(err, meta.ReqId, ErrorEncodingJson, meta.ExternalLog)
+	if err != nil {
+		meta.Span.AddEvent(ErrorEncodingJson, err)
+	}
 	meta.Writer.WriteHeader(meta.StatusCode)
 	return ErrResponse
 }

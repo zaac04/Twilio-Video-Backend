@@ -25,6 +25,10 @@ type CreateRoomResp struct {
 	// Info     interface{} `json:"info"`
 }
 
+type CloseRoomResp struct {
+	Status string `json:"status"`
+}
+
 type AllRooms struct {
 	Interviews []string `json:"interviews"`
 }

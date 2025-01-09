@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime"
 	"stargazer/video-recording/config"
 )
 
@@ -37,4 +38,10 @@ func ExitOnError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func GetCurrentFunctionName() string {
+	pc, _, _, _ := runtime.Caller(2)
+	fn := runtime.FuncForPC(pc)
+	return fn.Name()
 }

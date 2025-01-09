@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"stargazer/video-recording/config"
@@ -22,7 +21,7 @@ import (
 )
 
 func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
-	ErrMeta := helpers.GenerateErrMeta(r, w)
+	ErrMeta := helpers.GenerateSpan(r, w)
 	var payload schemas.MediaConvertMPDEvent
 	err := utils.UnmarshalReqBodyAllowUnknown(r.Body, &payload)
 
@@ -57,7 +56,6 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if err := tx.Save(&interview).Error; err != nil {
-
 				return fmt.Errorf("error updating room processing status: %v", err)
 			}
 
@@ -72,21 +70,27 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := comms.Interview_SVC.Request("POST", fmt.Sprintf("/api/v1/interviews/video/%s/", interview.RoomName), payloads)
 
-	if resp.StatusCode != http.StatusOK || err != nil {
-		utils.LogError(fmt.Errorf("error in making interservice call with status code, %d, %v", resp.StatusCode, err), ErrMeta.ReqId, error_handler.InternalCommsError, error_handler.InternalCommsError)
+	if err != nil {
+		utils.LogError(fmt.Errorf("error in making interservice call %v", err), ErrMeta.ReqId, error_handler.InternalCommsError, error_handler.InternalCommsError)
 		return
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := utils.DecodeReqBodyAsString(resp.Body)
 	if err != nil {
-		log.Fatalf("Error reading response body: %v", err)
+		utils.LogError(fmt.Errorf("error decoding response %v", err), ErrMeta.ReqId, error_handler.ErrorDecodingJson, error_handler.ErrorDecodingJson)
+		return
 	}
+	if resp.StatusCode != http.StatusOK {
+		utils.LogError(fmt.Errorf("error in making interservice call with status code,%d and response %s", resp.StatusCode, body), ErrMeta.ReqId, error_handler.InternalCommsError, error_handler.InternalCommsError)
+		return
+	}
+
 	fmt.Printf("Successfully made request with payload: %+v, %s \n", payloads, body)
 }
 
 func RecordingStatusCallback(w http.ResponseWriter, r *http.Request) {
 
-	ErrMeta := helpers.GenerateErrMeta(r, w)
+	ErrMeta := helpers.GenerateSpan(r, w)
 
 	err := r.ParseForm()
 	if err != nil {

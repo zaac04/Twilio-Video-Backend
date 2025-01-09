@@ -3,12 +3,16 @@ package middlewares
 import (
 	"net/http"
 	"stargazer/video-recording/config"
+	"stargazer/video-recording/internal/api/helpers"
 	"strings"
 )
 
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// List of allowed origins
+
+		ErrMeta := helpers.GenerateSpan(r, w)
+		defer ErrMeta.Trace.AddTraceToCtx(r)
 
 		allowedOrigins := strings.Split(config.App.CORS_ALLOWED_ORIGINS, ",")
 
@@ -38,7 +42,6 @@ func CORS(next http.Handler) http.Handler {
 			return
 		}
 
-		// Continue processing the request
 		next.ServeHTTP(w, r)
 	})
 }

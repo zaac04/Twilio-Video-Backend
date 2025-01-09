@@ -49,4 +49,6 @@ const (
 	TwilioRoomNotFound         = "Twilio Room Not Found"
 	TwilioVideoNotFound        = "Twilio Video Not Found"
 	QueryParamsNotFound        = "Query Params are missing"
+	MediaConvertAuthFailed     = "MediaConvert Auth Failed"
+	MiddleWaresOk              = "ok at middleWare"
 )

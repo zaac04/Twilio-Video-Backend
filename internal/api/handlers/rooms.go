@@ -15,10 +15,14 @@ import (
 )
 
 func CreateRoom(w http.ResponseWriter, r *http.Request) {
-	ErrMeta := helpers.GenerateErrMeta(r, w)
+	ErrMeta := helpers.GenerateSpan(r, w)
 	var RoomDetails models.Interview
 	var reqBody schemas.CreateRoom
 	db := db.Pg.GetClient()
+
+	defer func() {
+		r = ErrMeta.Trace.AddTraceToCtx(r)
+	}()
 
 	err := utils.UnmarshalReqBody(r.Body, &reqBody)
 	if err != nil {
@@ -26,54 +30,63 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := db.Where("room_name = ?", reqBody.RoomName).Find(&RoomDetails)
-	if res.Error != nil {
-		helpers.RespondDbFailed(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.DBRetrieveFailed, error_handler.InternalError)
-		return
-	}
+	ErrMeta.Span.AddEvent("ReqBody", &reqBody)
 
 	if len(reqBody.RoomName) == 0 {
 		helpers.RespondValidationFailed(fmt.Errorf("room name must not be empty"), &ErrMeta)
 		return
 	}
 
-	if res.RowsAffected != 0 && RoomDetails.Status != "" {
-		helpers.RespondTwilioRoomAlreadyExists(fmt.Errorf("%s", error_handler.TwilioRoomAlreadyExist), &ErrMeta)
-		utils.LogError(fmt.Errorf("%s", error_handler.TwilioRoomAlreadyExist), ErrMeta.ReqId, error_handler.TwilioRoomAlreadyExist, error_handler.InternalError)
+	res := db.Where("room_name = ?", reqBody.RoomName).Find(&RoomDetails)
+	if res.Error != nil {
+		helpers.RespondDbFailed(helpers.GetDBError(res), &ErrMeta)
 		return
 	}
 
-	//creates a twilio room and respons error if occurs
+	if res.RowsAffected != 0 && RoomDetails.Status != "" {
+		data, err := json.MarshalIndent(schemas.CreateRoomResp{
+			Token:    RoomDetails.Token,
+			RoomName: RoomDetails.RoomName,
+		}, " ", " ")
+
+		if err != nil {
+			helpers.RespondJsonEncodeErr(err, &ErrMeta)
+			return
+		}
+		ErrMeta.Span.AddEvent(error_handler.TwilioRoomAlreadyExist, RoomDetails.RoomName)
+		helpers.SendResponse(w, data)
+		return
+	}
+
 	token, roomId, err := helpers.CreateRoomHelper(&ErrMeta, &reqBody)
 	if err != nil {
 		helpers.RespondTwilioRoomCreationError(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.TwilioRoomCreationError, error_handler.InternalError)
 		return
 	}
 
-	if db.Create(&models.Interview{RoomName: reqBody.RoomName, RoomSid: roomId, Token: token, Status: enums.RoomStatusOnGoing}).Error != nil {
-		helpers.RespondDbFailed(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.DBEntryFailed, error_handler.InternalError)
+	if err := db.Create(&models.Interview{RoomName: reqBody.RoomName, RoomSid: roomId, Token: token, Status: enums.RoomStatusOnGoing}).Error; err != nil {
+		helpers.RespondDbFailed(helpers.GetDBError(res), &ErrMeta)
 		return
 	}
 
 	data, err := json.MarshalIndent(schemas.CreateRoomResp{Token: token, RoomName: reqBody.RoomName}, " ", " ")
 	if err != nil {
 		helpers.RespondJsonEncodeErr(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.ErrorEncodingJson, error_handler.InternalError)
 		return
 	}
 
 	helpers.SendResponse(w, data)
-
 }
 
 func CloseRoom(w http.ResponseWriter, r *http.Request) {
 	client := twilio.CreateClient()
 	db := db.Pg.GetClient()
 
-	ErrMeta := helpers.GenerateErrMeta(r, w)
+	ErrMeta := helpers.GenerateSpan(r, w)
+	defer func() {
+		r = ErrMeta.Trace.AddTraceToCtx(r)
+	}()
+
 	var RoomDetails models.Interview
 	var reqBody schemas.CloseRoom
 
@@ -83,6 +96,8 @@ func CloseRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ErrMeta.Span.AddEvent("ReqBody", &reqBody)
+
 	if len(reqBody.RoomName) == 0 {
 		helpers.RespondValidationFailed(fmt.Errorf("room name must not be empty"), &ErrMeta)
 		return
@@ -90,7 +105,7 @@ func CloseRoom(w http.ResponseWriter, r *http.Request) {
 
 	res := db.Where("room_name = ?", reqBody.RoomName).Find(&RoomDetails)
 	if res.Error != nil {
-		helpers.RespondDbFailed(err, &ErrMeta)
+		helpers.RespondDbFailed(helpers.GetDBError(res), &ErrMeta)
 		return
 	}
 
@@ -114,15 +129,33 @@ func CloseRoom(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if result.Error != nil {
-		utils.LogError(result.Error, ErrMeta.ReqId, error_handler.DBUpdateFailed, error_handler.InternalError)
+		ErrMeta.Span.AddEvent(error_handler.DBUpdateFailed, map[string]string{
+			"Error": result.Error.Error(),
+			"Query": result.Statement.SQL.String(),
+		})
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("closed"))
+
+	data, err := json.MarshalIndent(schemas.CloseRoomResp{
+		Status: enums.RoomStatusClosed,
+	}, " ", " ")
+
+	if err != nil {
+		helpers.RespondJsonEncodeErr(err, &ErrMeta)
+		return
+	}
+	ErrMeta.Span.AddEvent(error_handler.TwilioRoomAlreadyExist, RoomDetails.RoomName)
+	helpers.SendResponse(w, data)
+
 }
 
 func GetAllRooms(w http.ResponseWriter, r *http.Request) {
-	ErrMeta := helpers.GenerateErrMeta(r, w)
+	ErrMeta := helpers.GenerateSpan(r, w)
+	defer func() {
+		r = ErrMeta.Trace.AddTraceToCtx(r)
+	}()
+
 	var AllInterviews []models.Interview
 	var AllRooms schemas.AllRooms
 	db := db.Pg.GetClient()
@@ -135,7 +168,6 @@ func GetAllRooms(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(AllRooms)
 	if err != nil {
 		helpers.RespondJsonEncodeErr(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.ErrorEncodingJson, error_handler.InternalError)
 		return
 	}
 
@@ -145,12 +177,15 @@ func GetAllRooms(w http.ResponseWriter, r *http.Request) {
 
 func DeleteAllRoom(w http.ResponseWriter, r *http.Request) {
 	client := twilio.CreateClient()
-	ErrMeta := helpers.GenerateErrMeta(r, w)
+	ErrMeta := helpers.GenerateSpan(r, w)
+
+	defer func() {
+		r = ErrMeta.Trace.AddTraceToCtx(r)
+	}()
 
 	rooms, err := client.DeleteAllRoom()
 	if err != nil {
 		helpers.RespondTwilioRoomCloseError(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.ErrorEncodingJson, error_handler.InternalError)
 		return
 	}
 
@@ -162,7 +197,7 @@ func DeleteAllRoom(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if result.Error != nil {
-			utils.LogError(result.Error, ErrMeta.ReqId, error_handler.DBUpdateFailed, error_handler.InternalError)
+			ErrMeta.Span.AddEvent(error_handler.DBUpdateFailed, result.Error.Error())
 			continue
 		}
 	}
@@ -172,21 +207,24 @@ func DeleteAllRoom(w http.ResponseWriter, r *http.Request) {
 	}, " ", " ")
 
 	if err != nil {
+		ErrMeta.Span.AddEvent(error_handler.ErrorEncodingJson, err.Error())
 		helpers.RespondJsonEncodeErr(err, &ErrMeta)
-		utils.LogError(err, ErrMeta.ReqId, error_handler.ErrorEncodingJson, error_handler.InternalError)
 		return
 	}
 	helpers.SendResponse(w, data)
 }
 
 func GetRoomDetails(w http.ResponseWriter, r *http.Request) {
-	Errmeta := helpers.GenerateErrMeta(r, w)
+	ErrMeta := helpers.GenerateSpan(r, w)
 	room_name := r.URL.Query().Get("room_name")
 	fmt.Println(room_name)
 	var RoomDetails models.Interview
+	defer func() {
+		r = ErrMeta.Trace.AddTraceToCtx(r)
+	}()
 
 	if len(room_name) == 0 {
-		helpers.RespondQueryParamsNotFound(fmt.Errorf("query params not found"), &Errmeta)
+		helpers.RespondQueryParamsNotFound(fmt.Errorf("query params not found"), &ErrMeta)
 		return
 	}
 
@@ -195,12 +233,12 @@ func GetRoomDetails(w http.ResponseWriter, r *http.Request) {
 	res := client.Where("room_name = ?", room_name).First(&RoomDetails)
 
 	if res.Error != nil {
-		helpers.RespondDbFailed(res.Error, &Errmeta)
+		helpers.RespondDbFailed(helpers.GetDBError(res), &ErrMeta)
 		return
 	}
 
 	if res.RowsAffected == 0 && RoomDetails.Status == "" {
-		helpers.RespondTwilioRoomRoomNotFound(fmt.Errorf("%s", error_handler.TwilioRoomNotFound), &Errmeta)
+		helpers.RespondTwilioRoomRoomNotFound(fmt.Errorf("%s", error_handler.TwilioRoomNotFound), &ErrMeta)
 		return
 	}
 
@@ -213,7 +251,7 @@ func GetRoomDetails(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		helpers.RespondJsonEncodeErr(err, &Errmeta)
+		helpers.RespondJsonEncodeErr(err, &ErrMeta)
 		return
 	}
 

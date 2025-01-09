@@ -8,7 +8,8 @@ import (
 
 func InterServiceAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ErrMeta := helpers.GenerateErrMeta(r, w)
+		ErrMeta := helpers.GenerateSpan(r, w)
+		defer ErrMeta.Trace.AddTraceToCtx(r)
 
 		token, err := comms.ExtractToken(r)
 

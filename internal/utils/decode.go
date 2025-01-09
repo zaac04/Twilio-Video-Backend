@@ -17,3 +17,8 @@ func UnmarshalReqBodyAllowUnknown(body io.ReadCloser, output interface{}) (err e
 	err = decoder.Decode(output)
 	return err
 }
+
+func DecodeReqBodyAsString(body io.Reader) (string, error) {
+	resp, err := io.ReadAll(body)
+	return string(resp), err
+}
