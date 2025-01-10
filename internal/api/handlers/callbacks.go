@@ -108,7 +108,12 @@ func RecordingStatusCallback(w http.ResponseWriter, r *http.Request) {
 		ErrMeta.Span.AddEvent(error_handler.FormParseFailed, err.Error())
 		return
 	}
-	ErrMeta.Span.AddEvent("Event", r.FormValue("StatusCallbackEvent"))
+
+	ErrMeta.Span.AddEvent("Event",
+		map[string]string{
+			"event-type": r.FormValue("StatusCallbackEvent"),
+			"room_name":  r.FormValue("RoomName"),
+		})
 
 	switch r.FormValue("StatusCallbackEvent") {
 	case "participant-connected":
@@ -150,7 +155,7 @@ func RecordingStatusCallback(w http.ResponseWriter, r *http.Request) {
 				"participant_id": r.FormValue("ParticipantSid"),
 				"room_id":        r.FormValue("RoomSid"),
 			},
-		})
+		}, ErrMeta.Span)
 
 		if err != nil {
 			ErrMeta.Span.AddEvent(error_handler.S3CopyFailed, err.Error())

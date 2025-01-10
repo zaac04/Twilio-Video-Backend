@@ -1,7 +1,7 @@
 package utils
 
 import (
-	yad "stargazer/video-recording/internal/yad"
+	yad "stargazer/video-recording/pkg/yad"
 )
 
 func LogError(err error, reqID string, internalLog string, externalLog string) {

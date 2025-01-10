@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"stargazer/video-recording/internal/utils"
-	yad "stargazer/video-recording/internal/yad"
+	yad "stargazer/video-recording/pkg/yad"
 	"strconv"
 	"time"
 )

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"stargazer/video-recording/config"
 	error_handler "stargazer/video-recording/internal/error"
 	"stargazer/video-recording/internal/utils"
 	"time"
@@ -35,7 +36,6 @@ func (s *Service) authenticate() error {
 	if err != nil {
 		return fmt.Errorf("failed to join url: %s", err)
 	}
-	fmt.Println(s.AuthHost, "endpoint")
 	headers := map[string]string{
 		"Content-Type": "application/json",
 		"SERVICE":      s.ServiceName,
@@ -59,7 +59,9 @@ func (s *Service) authenticate() error {
 	accessToken = auth_response.Data.AccessToken
 	refreshToken = auth_response.Data.RefreshToken
 
-	fmt.Println(accessToken)
+	if config.App.ENV == "DEV" {
+		fmt.Println(accessToken)
+	}
 	return nil
 }
 
@@ -113,7 +115,9 @@ func (s *Service) refreshToken() error {
 
 	accessToken = auth_response.Data.AccessToken
 	refreshToken = auth_response.Data.RefreshToken
-
+	if config.App.ENV == "DEV" {
+		fmt.Println(accessToken)
+	}
 	return nil
 }
 

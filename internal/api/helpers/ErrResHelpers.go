@@ -4,7 +4,7 @@ import (
 	"net/http"
 	error_handler "stargazer/video-recording/internal/error"
 	"stargazer/video-recording/internal/utils"
-	"stargazer/video-recording/internal/yad"
+	"stargazer/video-recording/pkg/yad"
 )
 
 func RespondJsonDecodeErr(err error, ErrMeta *error_handler.ErrorResponseMeta) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	error_handler "stargazer/video-recording/internal/error"
-	yad "stargazer/video-recording/internal/yad"
+	yad "stargazer/video-recording/pkg/yad"
 )
 
 func PanicHandler(next http.Handler) http.Handler {

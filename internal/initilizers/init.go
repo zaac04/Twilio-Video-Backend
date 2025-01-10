@@ -5,8 +5,8 @@ import (
 	"stargazer/video-recording/internal/comms"
 	"stargazer/video-recording/internal/db"
 	"stargazer/video-recording/internal/utils"
-	"stargazer/video-recording/internal/yad"
 	"stargazer/video-recording/pkg/aws/iam"
+	"stargazer/video-recording/pkg/yad"
 )
 
 func Initialize_backend(env_file string) {

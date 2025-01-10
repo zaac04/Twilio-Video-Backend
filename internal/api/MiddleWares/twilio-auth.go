@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"stargazer/video-recording/internal/schemas"
 	"stargazer/video-recording/pkg/twilio"
@@ -23,7 +22,6 @@ func AuthenticateTwilio(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		fmt.Println("das")
 		data, _ := json.Marshal(schemas.ErrResponse{
 			Error: "Request not originating from twilio",
 		})

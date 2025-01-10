@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"stargazer/video-recording/internal/schemas"
-	"stargazer/video-recording/internal/yad"
+	"stargazer/video-recording/pkg/yad"
 )
 
 type ErrorResponseMeta struct {
