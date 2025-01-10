@@ -58,6 +58,10 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 				interview.ProcessingStatus = enums.MediaConvertFailed
 			}
 
+			if interview.Status != enums.RoomStatusClosed {
+				interview.Status = enums.RoomStatusClosed
+			}
+
 			if err := tx.Save(&interview).Error; err != nil {
 				ErrMeta.Span.AddEvent("error updating room processing status", err.Error())
 				return fmt.Errorf("error updating room processing status: %v", err)
