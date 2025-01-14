@@ -24,7 +24,7 @@ done
 
 
 #checks if variables are empty if so exit
-if [[ -z "$REPO" || -z "$REPO" ]]; then
+if [[ -z "$REPO" || -z "$TAG" ]]; then
     echo "Error: Both --repo and --tag are required."
     exit 1
 fi
