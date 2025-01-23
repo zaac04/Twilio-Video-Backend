@@ -81,10 +81,11 @@ convert_secret_file_to_json_array() {
         fi
         key=$(echo "$key" | xargs)
         value=$(echo "$value" | xargs)
-        json_array+="{\"name\": \"$key\", \"valueFrom\": \"$secret_arn:$value::\"},"
+        json_array+="{\"name\": \"$key\", \"valueFrom\": \"$secret_arn:$value\"},"
     done <"$filename"
 
     json_array="${json_array%,}]"
+    echo "$json_array"
 }
 
 NEW_ENV=$(convert_file_to_json_array "$TEMP_ENV")
