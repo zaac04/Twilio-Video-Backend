@@ -58,7 +58,7 @@ convert_file_to_json_array() {
     filename="$1"
     json_array="["
 
-    while IFS='=' read -r key value; do
+    while IFS='=' read -r key value || [[ -n "$key" ]]; do
         if [[ -z "$key" || "$key" =~ ^# ]]; then
             continue
         fi
@@ -75,7 +75,7 @@ convert_secret_file_to_json_array() {
     json_array="["
     secret_arn=$(aws secretsmanager list-secrets --query "SecretList[?Name=='${TEMP_SECRET_NAME}'].ARN" --output text --profile $TEMP_PROFILE --region $TEMP_REGION)
 
-    while IFS='=' read -r key value; do
+    while IFS='=' read -r key value || [[ -n "$key" ]]; do
         if [[ -z "$key" || "$key" =~ ^# ]]; then
             continue
         fi
