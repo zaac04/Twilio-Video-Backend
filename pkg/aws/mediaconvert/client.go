@@ -144,9 +144,12 @@ func (mc *MediaConvert) addToOutputGroup() {
 		OutputGroupSettings: &types.OutputGroupSettings{
 			Type: types.OutputGroupTypeDashIsoGroupSettings,
 			DashIsoGroupSettings: &types.DashIsoGroupSettings{
-				SegmentLength:  aws.Int32(30),
-				Destination:    aws.String(mc.outputLocation),
-				FragmentLength: aws.Int32(2),
+				Destination:           aws.String(mc.outputLocation),
+				SegmentLength:         aws.Int32(10),
+				FragmentLength:        aws.Int32(2),
+				MinBufferTime:         aws.Int32(2),
+				SegmentControl:        types.DashIsoSegmentControlSegmentedFiles,
+				MinFinalSegmentLength: aws.Float64(2),
 			},
 		},
 	}
