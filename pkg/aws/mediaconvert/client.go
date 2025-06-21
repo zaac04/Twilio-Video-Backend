@@ -133,6 +133,7 @@ func (mc *MediaConvert) addOutputs(defs []Definition) {
 				NameModifier: aws.String("_" + def.ToString()),
 			})
 		}
+
 		mc.addToOutputGroup()
 	}
 
@@ -154,4 +155,33 @@ func (mc *MediaConvert) addToOutputGroup() {
 		},
 	}
 	mc.JobSettings.OutputGroups = append(mc.JobSettings.OutputGroups, mc.jobOutputGroup)
+
+	mc.JobSettings.OutputGroups = append(mc.JobSettings.OutputGroups, types.OutputGroup{
+		Outputs: []types.Output{
+			{
+				ContainerSettings: &types.ContainerSettings{
+					Container: types.ContainerTypeMp4,
+				},
+				VideoDescription: &types.VideoDescription{
+					Width:  aws.Int32(640),
+					Height: aws.Int32(360),
+					CodecSettings: &types.VideoCodecSettings{
+						Codec: types.VideoCodecH264,
+						H264Settings: &types.H264Settings{
+							Bitrate:         aws.Int32(2500000),
+							RateControlMode: types.H264RateControlModeCbr,
+						},
+					},
+				},
+				NameModifier: aws.String("_ml_output"),
+			},
+		},
+		OutputGroupSettings: &types.OutputGroupSettings{
+			Type: types.OutputGroupTypeFileGroupSettings,
+			FileGroupSettings: &types.FileGroupSettings{
+				Destination: aws.String(mc.outputLocation),
+			},
+		},
+	})
+
 }

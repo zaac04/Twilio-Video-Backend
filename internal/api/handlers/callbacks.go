@@ -22,11 +22,12 @@ import (
 
 // media convert processing callbacks from twilio
 func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
+
 	ErrMeta := helpers.GenerateSpan(r, w)
 	defer ErrMeta.Trace.AddTraceToCtx(r)
 
 	var payload schemas.MediaConvertMPDEvent
-
+	// var payload interface{}
 	if err := utils.UnmarshalReqBodyAllowUnknown(r.Body, &payload); err != nil {
 		ErrMeta.Span.AddEvent(error_handler.ErrorDecodingJson, err.Error())
 		return
@@ -71,11 +72,50 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	payloads := map[string]string{
-		"recording_url": helpers.ConstructVideoUrl(interview.VideoUrl),
+	// payloads := map[string]string{
+	// 	"recording_url": helpers.ConstructVideoUrl(interview.VideoUrl),
+	// }
+
+	// resp, err := comms.Interview_SVC.Request("POST", fmt.Sprintf("/api/v1/interviews/video/%s/", interview.RoomName), payloads)
+
+	// if err != nil {
+	// 	ErrMeta.Span.AddEvent("error in making interservice call", err.Error())
+	// 	return
+	// }
+
+	// body, err := utils.DecodeReqBodyAsString(resp.Body)
+	// if err != nil {
+	// 	ErrMeta.Span.AddEvent("error decoding response", err.Error())
+	// 	return
+	// }
+
+	// if resp.StatusCode != http.StatusOK {
+	// 	ErrMeta.Span.AddEvent("error in making interservice call", map[string]string{
+	// 		"StatusCode": strconv.Itoa(resp.StatusCode),
+	// 		"Body":       body,
+	// 	})
+	// 	return
+	// }
+
+	// ErrMeta.Span.AddEvent("Successfully made request with payload", map[string]string{
+	// 	"response": body,
+	// // })
+
+	s3_url := payload.Detail.OutputGroupDetails[1].OutputDetails[0].OutputFilePaths[0]
+	presigned_urls, err := helpers.GeneratePresignedUrls(s3_url, interview.RoomName)
+
+	if err != nil {
+		ErrMeta.Span.AddEvent("Error generating presigned_urls", err.Error())
+		return
 	}
 
-	resp, err := comms.Interview_SVC.Request("POST", fmt.Sprintf("/api/v1/interviews/video/%s/", interview.RoomName), payloads)
+	resp, err := comms.Analyze_SVC.Request("POST", "/api/v1/analyze", map[string]string{
+		"source_url":      presigned_urls.Source_Url,
+		"destination_url": presigned_urls.Destination_url,
+		"callback_url":    "http://localhost:6001",
+		"callback_method": "post",
+		"interview_id":    interview.RoomName,
+	})
 
 	if err != nil {
 		ErrMeta.Span.AddEvent("error in making interservice call", err.Error())
@@ -88,17 +128,18 @@ func MediaConvertCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusAccepted {
+
 		ErrMeta.Span.AddEvent("error in making interservice call", map[string]string{
 			"StatusCode": strconv.Itoa(resp.StatusCode),
 			"Body":       body,
 		})
-		return
 	}
 
-	ErrMeta.Span.AddEvent("Successfully made request with payload", map[string]string{
+	ErrMeta.Span.AddEvent("Successfully made request to analysis with payload", map[string]string{
 		"response": body,
 	})
+
 }
 
 // Recording Callbacks from twilio
@@ -178,4 +219,8 @@ func RecordingStatusCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func AnalysisReportCallback(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }

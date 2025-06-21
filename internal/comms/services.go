@@ -6,6 +6,7 @@ import (
 
 var Auth_SVC *Service
 var Interview_SVC *Service
+var Analyze_SVC *Service
 var err error
 
 func AuthenticateService() error {
@@ -18,6 +19,10 @@ func AuthenticateService() error {
 		return err
 	}
 	Interview_SVC, err = NewService(config.App.INTERVIEW_SVC_NAME, config.App.SERVICE_KEY, config.App.AUTH_KEY, config.App.AUTH_SVC_URL, config.App.INTERVIEW_SVC_URL)
+	if err != nil {
+		return err
+	}
+	Analyze_SVC, err = NewService("analyze", config.App.SERVICE_KEY, config.App.AUTH_KEY, config.App.AUTH_SVC_URL, "http://lens:6001")
 	return err
 }
 

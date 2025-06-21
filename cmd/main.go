@@ -20,8 +20,8 @@ func init() {
 }
 
 func main() {
-	router := chi.NewRouter()
 
+	router := chi.NewRouter()
 	router.Use(middlewares.RequestLogger)
 	router.Use(middlewares.CORS)
 	router.Use(middlewares.Timeout)
@@ -40,6 +40,7 @@ func main() {
 			r.Get("/get_all_rooms", handlers.GetAllRooms)
 			r.Get("/get_room_details", handlers.GetRoomDetails)
 			r.Get("/get_video_url", handlers.GetVideoUrl)
+			r.Post("/analyze_video_callback",handlers.AnalysisReportCallback)
 		})
 
 		r.Group(func(r chi.Router) {

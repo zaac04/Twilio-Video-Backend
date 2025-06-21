@@ -52,6 +52,9 @@ type MediaConvertMPDEvent struct {
 		Status             string `json:"status"` // Required
 		OutputGroupDetails []struct {
 			PlaylistFilePaths []string `json:"playlistFilePaths"` // Optional
+			OutputDetails     []struct {
+				OutputFilePaths []string `json:"outputFilePaths"`
+			} `json:"outputDetails"`
 		} `json:"outputGroupDetails,omitempty"` // Optional
 	} `json:"detail"`
 }

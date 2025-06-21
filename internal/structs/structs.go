@@ -43,4 +43,13 @@ type AppConfig struct {
 	ENV                  string `env:"name:ENV"`
 	INTERVIEW_SVC_URL    string `env:"INTERVIEW_SVC_URL"`
 	INTERVIEW_SVC_NAME   string `env:"INTERVIEW_SVC_NAME"`
+
+	KAFKA_ENDPOINT              string `env:"KAFKA_ENDPOINT"`
+	KAFKA_TRIGGER_ANALYZE_TOPIC string `env:"KAFKA_TRIGGER_ANALYZE_TOPIC"`
+	KAFKA_RESULTS_TOPIC         string `env:"KAFKA_RESULTS_TOPIC"`
+}
+
+type AnalyzeVideoPresignedUrls struct {
+	Source_Url      string
+	Destination_url string
 }

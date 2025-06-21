@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"path"
 	AppConfig "stargazer/video-recording/config"
@@ -20,6 +21,11 @@ type CopyObject struct {
 	SourcePrefix string
 	DestPrefix   string
 	Metadata     map[string]string
+}
+
+type PresignObject struct {
+	Bucket string
+	Key    string
 }
 
 func CopyFiles(CopyObject CopyObject, span *yad.Span) error {
@@ -85,4 +91,30 @@ func GetPathsFromUrl(uri string) (sourcePath string, destPath string, err error)
 	}
 	sourcePath = strings.TrimPrefix(parsedURL.Path, "/")
 	return sourcePath, path.Base(sourcePath), nil
+}
+
+func ParseS3Url(s3url string) (bucket string, key string, base string, err error) {
+	parsed, err := url.Parse(s3url)
+	if err != nil {
+		return
+	}
+	base = path.Base(parsed.Path) //filename
+
+	switch parsed.Scheme {
+	case "s3":
+		bucket = parsed.Host
+		key = strings.TrimLeft(parsed.Path, "/") //everything after s3://bucket-name/
+	case "https":
+		hostParts := strings.Split(parsed.Host, ".")
+		if len(hostParts) < 4 || hostParts[1] != "s3" {
+			return "", "", "", fmt.Errorf("not a valid S3 HTTPS URL")
+		}
+		bucket = hostParts[0]
+		key = strings.TrimLeft(parsed.Path, "/")
+	default:
+		return "", "", "", fmt.Errorf("unsupported URL scheme: %s", parsed.Scheme)
+	}
+
+	return bucket, key, base, nil
+
 }
